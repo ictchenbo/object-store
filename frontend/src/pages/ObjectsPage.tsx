@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Download, Eye, Filter, Loader2, Plus, RefreshCw, Search, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { ChevronDown, Download, Eye, Filter, Loader2, Plus, RefreshCw, Search, Tag as TagIcon, Trash2, X } from "lucide-react";
 import { api, ApiError } from "@/lib/api";
 import type { ObjectFilters, ObjectItem, ObjectSort, TagItem } from "@/lib/types";
 import { daysUntil, formatBytes, formatDateTime, statusMeta, truncate } from "@/lib/format";
@@ -108,7 +108,7 @@ function summarize(title: string, result: BatchResult) {
 /** 对象列表页：搜索/排序/筛选 + 游标分页 + 上传/下载/删除 */
 export function ObjectsPage() {
   const { canWrite } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tagFromUrl = searchParams.get("tag") || "";
   // 中文注释：搜索框防抖 300ms 后触发查询
   const [qInput, setQInput] = React.useState("");
@@ -127,6 +127,7 @@ export function ObjectsPage() {
   });
   const [tagMode, setTagMode] = React.useState<"all" | "any">("all");
   const [selectedTags, setSelectedTags] = React.useState<TagItem[]>([]);
+  const [advancedOpen, setAdvancedOpen] = React.useState(false);
   const [applied, setApplied] = React.useState({
     ...filters,
     tag_ids: [] as string[],
@@ -196,6 +197,12 @@ export function ObjectsPage() {
       return;
     }
     setApplied({ ...filters, tag_ids, tag: "", tag_mode: tagMode });
+    setAdvancedOpen(false);
+    if (tagFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("tag");
+      setSearchParams(nextParams, { replace: true });
+    }
     setCursorStack([null]);
     setPageIndex(0);
   }
@@ -218,7 +225,13 @@ export function ObjectsPage() {
     setFilters(empty);
     setSelectedTags([]);
     setTagMode("all");
-    setApplied({ ...empty, tag_ids: [], tag: tagFromUrl, tag_mode: "all" });
+    setAdvancedOpen(false);
+    setApplied({ ...empty, tag_ids: [], tag: "", tag_mode: "all" });
+    if (tagFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("tag");
+      setSearchParams(nextParams, { replace: true });
+    }
     setCursorStack([null]);
     setPageIndex(0);
   }
@@ -283,6 +296,17 @@ export function ObjectsPage() {
 
   const items = list.data?.items || [];
   const nextCursor = list.data?.next_cursor || null;
+  const activeAdvancedFilters = [
+    applied.name_prefix && `名称前缀：${applied.name_prefix}`,
+    applied.bucket && `桶：${applied.bucket}`,
+    applied.content_type && `媒体类型：${applied.content_type}`,
+    applied.content_type_prefix && `媒体类型前缀：${applied.content_type_prefix}`,
+    applied.sha256 && `SHA-256：${applied.sha256.slice(0, 10)}…`,
+    (applied.ready_from || applied.ready_to) && `就绪日期：${applied.ready_from || "不限"}～${applied.ready_to || "不限"}`,
+    (applied.min_size || applied.max_size) && `大小：${applied.min_size || "0"}～${applied.max_size || "不限"} 字节`,
+    applied.tag && `标签：${applied.tag}`,
+    applied.tag_ids.length > 0 && `标签 ${applied.tag_ids.length} 个${applied.tag_ids.length > 1 ? `（${applied.tag_mode}）` : ""}`,
+  ].filter((value): value is string => Boolean(value));
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -384,12 +408,12 @@ export function ObjectsPage() {
           <CardTitle className="flex items-center gap-2 text-base">
             <Filter className="size-4" />
             搜索与筛选
-            <InfoHint content="关键词输入 300ms 后自动查询；可按名称前缀、桶、媒体类型、就绪时间、大小、哈希与标签组合过滤。" label="查看对象筛选说明" />
+            <InfoHint content="关键词输入后自动查询，排序立即生效；名称前缀、桶、媒体类型、时间、大小、哈希与标签等高级条件设置后点击“应用筛选”。" label="查看对象筛选说明" />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1.5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="min-w-0 flex-1 space-y-1.5">
               <Label htmlFor="关键词-q">关键词</Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -402,7 +426,7 @@ export function ObjectsPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 lg:w-56 lg:shrink-0">
               <Label htmlFor="排序-sort">排序</Label>
               <Select value={sort} onValueChange={(value: ObjectSort) => onSortChange(value)}>
                 <SelectTrigger id="排序-sort">
@@ -416,121 +440,133 @@ export function ObjectsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="名称前缀">名称前缀</Label>
-              <Input id="名称前缀"
-                value={filters.name_prefix}
-                placeholder="display_name 前缀"
-                onChange={(event) => setFilters((prev) => ({ ...prev, name_prefix: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="媒体类型前缀">媒体类型前缀</Label>
-              <Input id="媒体类型前缀"
-                value={filters.content_type_prefix}
-                placeholder="如 image/ 或 application/pdf"
-                onChange={(event) => setFilters((prev) => ({ ...prev, content_type_prefix: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="桶">桶</Label>
-              <Input id="桶"
-                value={filters.bucket}
-                placeholder="objects"
-                onChange={(event) => setFilters((prev) => ({ ...prev, bucket: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="媒体类型">媒体类型（精确）</Label>
-              <Input id="媒体类型"
-                value={filters.content_type}
-                placeholder="application/pdf"
-                onChange={(event) => setFilters((prev) => ({ ...prev, content_type: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="sha256">SHA-256</Label>
-              <Input id="sha256"
-                value={filters.sha256}
-                placeholder="64 位十六进制"
-                onChange={(event) => setFilters((prev) => ({ ...prev, sha256: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="标签匹配">标签匹配</Label>
-              <Select value={tagMode} onValueChange={(value: "all" | "any") => setTagMode(value)}>
-                <SelectTrigger id="标签匹配">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">同时具备（all）</SelectItem>
-                  <SelectItem value="any">具备其一（any）</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="就绪起日期">就绪起（日期）</Label>
-              <Input id="就绪起日期"
-                type="date"
-                value={filters.ready_from}
-                onChange={(event) => setFilters((prev) => ({ ...prev, ready_from: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="就绪止日期">就绪止（日期）</Label>
-              <Input id="就绪止日期"
-                type="date"
-                value={filters.ready_to}
-                onChange={(event) => setFilters((prev) => ({ ...prev, ready_to: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="最小字节">最小字节</Label>
-              <Input id="最小字节"
-                type="number"
-                min={0}
-                value={filters.min_size}
-                placeholder="0"
-                onChange={(event) => setFilters((prev) => ({ ...prev, min_size: event.target.value }))}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="最大字节">最大字节</Label>
-              <Input id="最大字节"
-                type="number"
-                min={0}
-                value={filters.max_size}
-                placeholder="不限"
-                onChange={(event) => setFilters((prev) => ({ ...prev, max_size: event.target.value }))}
-              />
+            <div className="flex gap-2 lg:shrink-0">
+              <Button
+                variant="outline"
+                className="hover:bg-muted hover:text-foreground"
+                aria-expanded={advancedOpen}
+                aria-controls={advancedOpen ? "object-advanced-filters" : undefined}
+                onClick={() => setAdvancedOpen((value) => !value)}
+              >
+                高级筛选
+                {activeAdvancedFilters.length ? <span className="rounded-full bg-brand/10 px-1.5 text-xs text-brand">{activeAdvancedFilters.length}</span> : null}
+                <ChevronDown className={`size-4 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+              </Button>
+              <Button variant="ghost" onClick={resetFilters}>重置</Button>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="标签已有标签未知标签返回空列表">标签（已有标签；未知标签返回空列表）</Label>
-            <TagPicker inputId="标签已有标签未知标签返回空列表" value={selectedTags} onChange={setSelectedTags} placeholder="搜索对象标签…" />
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={applyFilters}>
-              <Search className="size-4" />
-              查询
-            </Button>
-            <Button variant="outline" onClick={resetFilters}>
-              重置
-            </Button>
-            {applied.tag ? (
-              <Badge variant="brand" className="gap-1">
-                标签：{applied.tag}
-                <button
-                  type="button"
-                  className="rounded-full p-0.5 hover:bg-brand/20"
-                  aria-label="清除标签筛选"
-                  onClick={() => setApplied((prev) => ({ ...prev, tag: "" }))}
-                >
-                  ×
-                </button>
-              </Badge>
-            ) : null}
-          </div>
+          {activeAdvancedFilters.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground" aria-label="已应用的高级筛选">
+              <span>已应用：</span>
+              {activeAdvancedFilters.map((item) => <Badge key={item} variant="secondary">{item}</Badge>)}
+            </div>
+          ) : null}
+          {advancedOpen ? (
+            <div id="object-advanced-filters" className="space-y-4 border-t pt-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="名称前缀">名称前缀</Label>
+                  <Input id="名称前缀"
+                    value={filters.name_prefix}
+                    placeholder="display_name 前缀"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, name_prefix: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="媒体类型前缀">媒体类型前缀</Label>
+                  <Input id="媒体类型前缀"
+                    value={filters.content_type_prefix}
+                    placeholder="如 image/ 或 application/pdf"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, content_type_prefix: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="桶">桶</Label>
+                  <Input id="桶"
+                    value={filters.bucket}
+                    placeholder="objects"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, bucket: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="媒体类型">媒体类型（精确）</Label>
+                  <Input id="媒体类型"
+                    value={filters.content_type}
+                    placeholder="application/pdf"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, content_type: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sha256">SHA-256</Label>
+                  <Input id="sha256"
+                    value={filters.sha256}
+                    placeholder="64 位十六进制"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, sha256: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="就绪起日期">就绪起（日期）</Label>
+                  <Input id="就绪起日期"
+                    type="date"
+                    value={filters.ready_from}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, ready_from: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="就绪止日期">就绪止（日期）</Label>
+                  <Input id="就绪止日期"
+                    type="date"
+                    value={filters.ready_to}
+                    onChange={(event) => setFilters((prev) => ({ ...prev, ready_to: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="最小字节">最小字节</Label>
+                  <Input id="最小字节"
+                    type="number"
+                    min={0}
+                    value={filters.min_size}
+                    placeholder="0"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, min_size: event.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="最大字节">最大字节</Label>
+                  <Input id="最大字节"
+                    type="number"
+                    min={0}
+                    value={filters.max_size}
+                    placeholder="不限"
+                    onChange={(event) => setFilters((prev) => ({ ...prev, max_size: event.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="对象标签">标签</Label>
+                  <TagPicker inputId="对象标签" value={selectedTags} onChange={setSelectedTags} placeholder="选择已有对象标签…" allowCreate={false} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="标签匹配">标签匹配</Label>
+                  <Select value={tagMode} onValueChange={(value: "all" | "any") => setTagMode(value)}>
+                    <SelectTrigger id="标签匹配">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">同时具备（all）</SelectItem>
+                      <SelectItem value="any">具备其一（any）</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={applyFilters}>
+                  <Search className="size-4" />
+                  应用筛选
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

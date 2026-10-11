@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
+  ChevronDown,
   Filter,
   Loader2,
   Plus,
@@ -53,7 +54,7 @@ const BATCH_LIMIT = 200;
 /** 文档列表：关键词搜索、排序、类型/来源/标签筛选，游标分页 + 批量操作 */
 export function DocumentsPage() {
   const { canWrite } = useAuth();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const tagFromUrl = searchParams.get("tag") || "";
   // 中文注释：即时输入态；q 经防抖 300ms 进入查询参数，避免每键一次请求
   const [qInput, setQInput] = React.useState("");
@@ -65,6 +66,7 @@ export function DocumentsPage() {
   const [createdTo, setCreatedTo] = React.useState("");
   const [tagMode, setTagMode] = React.useState<"all" | "any">("all");
   const [selectedTags, setSelectedTags] = React.useState<TagItem[]>([]);
+  const [advancedOpen, setAdvancedOpen] = React.useState(false);
   const [applied, setApplied] = React.useState({
     doc_type: "",
     source: "",
@@ -127,6 +129,12 @@ export function DocumentsPage() {
       return;
     }
     setApplied({ doc_type: docType, source, created_from: createdFrom, created_to: createdTo, tag_ids, tag: "", tag_mode: tagMode });
+    setAdvancedOpen(false);
+    if (tagFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("tag");
+      setSearchParams(nextParams, { replace: true });
+    }
     setCursorStack([null]);
     setPageIndex(0);
   }
@@ -141,7 +149,13 @@ export function DocumentsPage() {
     setCreatedTo("");
     setSelectedTags([]);
     setTagMode("all");
-    setApplied({ doc_type: "", source: "", created_from: "", created_to: "", tag_ids: [], tag: tagFromUrl, tag_mode: "all" });
+    setAdvancedOpen(false);
+    setApplied({ doc_type: "", source: "", created_from: "", created_to: "", tag_ids: [], tag: "", tag_mode: "all" });
+    if (tagFromUrl) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete("tag");
+      setSearchParams(nextParams, { replace: true });
+    }
     setCursorStack([null]);
     setPageIndex(0);
   }
@@ -247,6 +261,13 @@ export function DocumentsPage() {
 
   const items = list.data?.items || [];
   const nextCursor = list.data?.next_cursor || null;
+  const activeAdvancedFilters = [
+    applied.doc_type && `类型：${applied.doc_type}`,
+    applied.source && `来源：${applied.source}`,
+    (applied.created_from || applied.created_to) && `创建日期：${applied.created_from || "不限"}～${applied.created_to || "不限"}`,
+    applied.tag && `标签：${applied.tag}`,
+    applied.tag_ids.length > 0 && `标签 ${applied.tag_ids.length} 个${applied.tag_ids.length > 1 ? `（${applied.tag_mode}）` : ""}`,
+  ].filter((value): value is string => Boolean(value));
 
   return (
     <div className="space-y-5">
@@ -278,12 +299,12 @@ export function DocumentsPage() {
           <CardTitle className="flex items-center gap-2 text-base">
             <Filter className="size-4" />
             搜索与筛选
-            <InfoHint content="关键词输入 300ms 后自动查询；排序立即生效。文档类型、来源与标签组合过滤支持 all / any。" label="查看文档筛选说明" />
+            <InfoHint content="关键词输入后自动查询，排序立即生效；高级条件设置完成后点击“应用筛选”。多个标签可选同时具备或具备其一。" label="查看文档筛选说明" />
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1.5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+            <div className="min-w-0 flex-1 space-y-1.5">
               <Label htmlFor="关键词-q">关键词</Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -296,7 +317,7 @@ export function DocumentsPage() {
                 />
               </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 lg:w-56 lg:shrink-0">
               <Label htmlFor="排序-sort">排序</Label>
               <Select value={sort} onValueChange={(value: DocumentSort) => onSortChange(value)}>
                 <SelectTrigger id="排序-sort">
@@ -310,85 +331,93 @@ export function DocumentsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="文档类型">文档类型</Label>
-              <Select value={docType || "all"} onValueChange={(value) => setDocType(value === "all" ? "" : value)}>
-                <SelectTrigger id="文档类型">
-                  <SelectValue placeholder="全部类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部类型</SelectItem>
-                  {(types.data?.items || []).map((item) => (
-                    <SelectItem key={item.code} value={item.code}>
-                      {item.display_name}（{item.code}）
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex gap-2 lg:shrink-0">
+              <Button
+                variant="outline"
+                className="hover:bg-muted hover:text-foreground"
+                aria-expanded={advancedOpen}
+                aria-controls={advancedOpen ? "document-advanced-filters" : undefined}
+                onClick={() => setAdvancedOpen((value) => !value)}
+              >
+                高级筛选
+                {activeAdvancedFilters.length ? <span className="rounded-full bg-brand/10 px-1.5 text-xs text-brand">{activeAdvancedFilters.length}</span> : null}
+                <ChevronDown className={`size-4 transition-transform ${advancedOpen ? "rotate-180" : ""}`} />
+              </Button>
+              <Button variant="ghost" onClick={resetFilters}>重置</Button>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="来源-source">来源 source</Label>
-              <Input id="来源-source"
-                value={source}
-                placeholder="crawler"
-                onChange={(event) => setSource(event.target.value)}
-              />
+          </div>
+          {activeAdvancedFilters.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground" aria-label="已应用的高级筛选">
+              <span>已应用：</span>
+              {activeAdvancedFilters.map((item) => <Badge key={item} variant="secondary">{item}</Badge>)}
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="创建起">创建日期起</Label>
-              <Input id="创建起" type="date" value={createdFrom}
-                onChange={(event) => setCreatedFrom(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="创建止">创建日期止</Label>
-              <Input id="创建止" type="date" value={createdTo}
-                onChange={(event) => setCreatedTo(event.target.value)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="标签匹配">标签匹配</Label>
-              <Select value={tagMode} onValueChange={(value: "all" | "any") => setTagMode(value)}>
-                <SelectTrigger id="标签匹配">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">同时具备（all）</SelectItem>
-                  <SelectItem value="any">具备其一（any）</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-end">
-              <div className="flex w-full gap-2">
-                <Button className="flex-1" onClick={applyFilters}>
+          ) : null}
+          {advancedOpen ? (
+            <div id="document-advanced-filters" className="space-y-4 border-t pt-4">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="文档类型">文档类型</Label>
+                  <Select value={docType || "all"} onValueChange={(value) => setDocType(value === "all" ? "" : value)}>
+                    <SelectTrigger id="文档类型">
+                      <SelectValue placeholder="全部类型" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全部类型</SelectItem>
+                      {(types.data?.items || []).map((item) => (
+                        <SelectItem key={item.code} value={item.code}>
+                          {item.display_name}（{item.code}）
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="来源-source">来源</Label>
+                  <Input id="来源-source"
+                    value={source}
+                    placeholder="例如：crawler"
+                    onChange={(event) => setSource(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="创建起">创建日期起</Label>
+                  <Input id="创建起" type="date" value={createdFrom}
+                    onChange={(event) => setCreatedFrom(event.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="创建止">创建日期止</Label>
+                  <Input id="创建止" type="date" value={createdTo}
+                    onChange={(event) => setCreatedTo(event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem]">
+                <div className="space-y-1.5">
+                  <Label htmlFor="标签">标签</Label>
+                  <TagPicker inputId="标签" value={selectedTags} onChange={setSelectedTags} placeholder="选择已有文档标签…" allowCreate={false} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="标签匹配">标签匹配</Label>
+                  <Select value={tagMode} onValueChange={(value: "all" | "any") => setTagMode(value)}>
+                    <SelectTrigger id="标签匹配">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">同时具备（all）</SelectItem>
+                      <SelectItem value="any">具备其一（any）</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={applyFilters}>
                   <Search className="size-4" />
-                  查询
-                </Button>
-                <Button variant="outline" onClick={resetFilters}>
-                  重置
+                  应用筛选
                 </Button>
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {applied.tag ? (
-              <Badge variant="brand" className="gap-1">
-                标签：{applied.tag}
-                <button
-                  type="button"
-                  className="rounded-full p-0.5 hover:bg-brand/20"
-                  aria-label="清除标签筛选"
-                  onClick={() => setApplied((prev) => ({ ...prev, tag: "" }))}
-                >
-                  ×
-                </button>
-              </Badge>
-            ) : null}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="标签">标签</Label>
-            <TagPicker inputId="标签" value={selectedTags} onChange={setSelectedTags} placeholder="搜索文档标签…" />
-          </div>
+          ) : null}
         </CardContent>
       </Card>
 

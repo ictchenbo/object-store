@@ -15,6 +15,8 @@ interface TagPickerProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  /** 筛选场景只允许选择已有标签 */
+  allowCreate?: boolean;
   /** 传给内部 Input 的 id，便于外部 <Label htmlFor> 关联 */
   inputId?: string;
 }
@@ -23,7 +25,7 @@ interface TagPickerProps {
  * 标签选择器：支持搜索已有标签（前缀建议）、选择多个标签、输入新标签名。
  * 新名称提交时由服务端归一化并自动创建，此处先本地暂存。
  */
-export function TagPicker({ value, onChange, placeholder = "搜索或输入新标签…", className, disabled, inputId }: TagPickerProps) {
+export function TagPicker({ value, onChange, placeholder = "搜索或输入新标签…", className, disabled, allowCreate = true, inputId }: TagPickerProps) {
   const [query, setQuery] = React.useState("");
   const [suggestions, setSuggestions] = React.useState<TagItem[]>([]);
   const [loading, setLoading] = React.useState(false);
@@ -33,8 +35,9 @@ export function TagPicker({ value, onChange, placeholder = "搜索或输入新�
   const containerRef = React.useRef<HTMLDivElement>(null);
   const listboxId = React.useId();
 
-  // 中文注释：输入变化时做前缀建议查询；空串查询当前租户标签列表。
+  // 中文注释：仅展开建议列表时请求标签，避免隐藏筛选区产生无关请求。
   React.useEffect(() => {
+    if (!open || disabled) return;
     let cancelled = false;
     const timer = setTimeout(async () => {
       setLoading(true);
@@ -63,7 +66,7 @@ export function TagPicker({ value, onChange, placeholder = "搜索或输入新�
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, value]);
+  }, [query, value, open, disabled]);
 
   // 中文注释：点击外部关闭建议列表。
   React.useEffect(() => {
@@ -130,7 +133,7 @@ export function TagPicker({ value, onChange, placeholder = "搜索或输入新�
   }
 
   const exactExists = suggestions.some((item) => item.name.toLowerCase() === query.trim().toLowerCase());
-  const canCreate = query.trim().length > 0 && !exactExists;
+  const canCreate = allowCreate && query.trim().length > 0 && !exactExists;
   const showList = open && (query.trim() || suggestions.length > 0 || loading);
 
   return (
@@ -174,10 +177,12 @@ export function TagPicker({ value, onChange, placeholder = "搜索或输入新�
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
         />
-        <Button type="button" variant="outline" disabled={disabled || !canCreate} onClick={addNewName}>
-          <Plus className="size-4" />
-          新建
-        </Button>
+        {allowCreate ? (
+          <Button type="button" variant="outline" disabled={disabled || !canCreate} onClick={addNewName}>
+            <Plus className="size-4" />
+            新建
+          </Button>
+        ) : null}
       </div>
       {showList ? (
         <div
