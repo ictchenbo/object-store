@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>对象存储管理服务方案 v2 · PostgreSQL + MinIO + FastAPI</title>
+  <style>
+    :root{--bg:#f5f7fb;--surface:#fff;--surface2:#edf2f9;--ink:#1b2738;--muted:#5c6b7c;--line:#dbe3ef;--brand:#1b63d9;--brand2:#0f457e;--good:#087f5b;--warn:#986300;--bad:#b43f43;--shadow:0 12px 38px rgba(16,37,66,.07)}
+    [data-theme="dark"]{--bg:#0d1420;--surface:#152132;--surface2:#1c2b3f;--ink:#eaf1f9;--muted:#aabbd0;--line:#31445a;--brand:#74a9ff;--brand2:#a1c5ff;--good:#65d2aa;--warn:#f0c271;--bad:#ff9090;--shadow:0 12px 38px rgba(0,0,0,.2)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.68 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}button{font:inherit}button:focus-visible,a:focus-visible{outline:3px solid var(--brand);outline-offset:3px}p{margin:.55em 0 1em}.shell{display:grid;grid-template-columns:244px minmax(0,1fr);min-height:100vh}.side{position:sticky;top:0;height:100vh;overflow:auto;padding:27px 19px;background:var(--surface);border-right:1px solid var(--line)}.side .logo{font-size:14px;font-weight:800;letter-spacing:.04em;color:var(--brand2);margin-bottom:20px}.side a{display:block;padding:7px 10px;color:var(--muted);border-radius:9px;font-size:13px}.side a:hover,.side a.active{background:var(--surface2);color:var(--ink);text-decoration:none}.side .sub{padding-left:22px}.side small{display:block;margin:22px 10px;color:var(--muted)}main{width:min(1160px,100%);padding:38px clamp(20px,4vw,58px) 90px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px}.eyebrow{font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--brand);font-weight:800}.theme{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 12px;color:var(--ink);cursor:pointer}h1{font-size:clamp(31px,4vw,49px);letter-spacing:-.035em;line-height:1.14;margin:19px 0 17px}h2{font-size:25px;letter-spacing:-.02em;margin:0 0 18px}h3{font-size:17px;margin:23px 0 8px}.lead{font-size:17px;color:var(--muted);max-width:780px}.meta{display:flex;flex-wrap:wrap;gap:8px;margin:24px 0 12px}.pill{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:5px 11px;color:var(--muted);font-size:12px}.hero{border-radius:19px;background:linear-gradient(140deg,#134b97,#1b75b7 65%,#178b95);color:#fff;padding:24px 27px;margin:30px 0;box-shadow:var(--shadow)}.hero strong{font-size:19px}.hero p{margin:8px 0 0;color:#e5f1ff}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}.card h3{margin:0 0 7px}.card p:last-child{margin-bottom:0}.section{margin-top:56px;scroll-margin-top:22px}.small{font-size:13px;color:var(--muted)}.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.02em;color:var(--brand2);background:var(--surface2);border-radius:5px;padding:1px 5px;white-space:nowrap}.tag.warn{color:var(--warn)}.tag.good{color:var(--good)}.tag.risk{color:var(--bad)}.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:13px}table{width:100%;border-collapse:collapse;min-width:680px}th,td{text-align:left;vertical-align:top;padding:11px 13px;border-bottom:1px solid var(--line)}th{background:var(--surface2);font-size:13px}tr:last-child td{border-bottom:0}ul,ol{padding-left:21px}li{margin:6px 0}.arch{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;align-items:center;gap:10px;margin:20px 0}.node{border:1px solid var(--line);background:var(--surface);padding:16px;border-radius:14px;text-align:center;min-height:104px;display:flex;flex-direction:column;justify-content:center;box-shadow:var(--shadow)}.node b{font-size:16px}.node span{font-size:12px;color:var(--muted)}.arrow{font-size:23px;color:var(--brand);font-weight:700}.arch-bottom{display:flex;gap:10px;align-items:stretch}.arch-bottom .node{flex:1}.flow{counter-reset:step;display:grid;gap:10px}.flow>li{list-style:none;position:relative;margin:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 15px 13px 52px}.flow>li:before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:13px;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--bg);display:grid;place-items:center;font-size:12px;font-weight:800}.callout{border-left:4px solid var(--brand);background:var(--surface2);padding:13px 17px;border-radius:0 11px 11px 0;margin:17px 0}.callout.warn{border-color:var(--warn)}.callout.risk{border-color:var(--bad)}.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.mini{font-size:13px}.status{display:flex;flex-wrap:wrap;gap:8px}.status span{padding:6px 9px;background:var(--surface2);border:1px solid var(--line);border-radius:8px;font-size:12px}.check li::marker{color:var(--good)}footer{margin-top:57px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}@media(max-width:940px){.shell{display:block}.side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:13px 20px}.side nav{display:none}.side .logo{margin:0}.side small{display:none}.grid{grid-template-columns:1fr}.arch{grid-template-columns:1fr;gap:6px}.arrow{transform:rotate(90deg);text-align:center}.arch-bottom,.two{display:grid;grid-template-columns:1fr}main{padding-top:25px}}@media print{.shell{display:block}.side,.theme{display:none}main{width:100%;padding:0}.section{break-inside:avoid;margin-top:30px}.card,.node,.flow>li{box-shadow:none}a{color:inherit;text-decoration:underline}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="目录"><div class="logo">OBJECT STORE · 方案设计 v2</div><nav id="toc">
+    <a href="#summary">执行摘要</a><a href="#scope">01 目标与边界</a><a href="#architecture">02 总体架构</a><a href="#data">03 数据模型</a><a href="#flows">04 核心流程</a><a href="#api">05 API 契约</a><a href="#search">06 查找与统计</a><a href="#consistency">07 一致性与修复</a><a href="#security">08 安全</a><a href="#deployment">09 部署与运维</a><a href="#capacity">10 容量与性能</a><a href="#delivery">11 交付计划与验收</a><a href="#risks">12 风险与决策</a><a href="#sources">资料依据</a>
+  </nav><small>标签：[设计] 拟采用；[依据] 文档支持；[目标] 待验收；[估算] 待压测；[待确认] 需业务输入。</small></aside>
+  <main>
+    <div class="topline"><div class="eyebrow">Solution Blueprint / 2026-10-09</div><button id="themeButton" class="theme" type="button" aria-label="切换深色模式">切换主题</button></div>
+    <h1>对象存储管理服务<br>PostgreSQL + MinIO + FastAPI</h1>
+    <p class="lead"><span class="tag">设计</span> 面向千万级对象目录：统一接入、对象查找、容量统计、可控删除，以及可恢复的数据一致性。本文定义第一版可实施范围，并明确哪些指标需要在真实负载下验证。</p>
+    <div class="meta"><span class="pill">版本 v2</span><span class="pill">部署形态：Linux / 容器</span><span class="pill">文件存储：MinIO</span><span class="pill">索引与业务状态：PostgreSQL</span><span class="pill">服务：FastAPI</span></div>
+
+    <section id="summary" class="section">
+      <div class="hero"><strong>核心决策</strong><p><span class="tag">设计</span> MinIO 是文件字节的权威来源；PostgreSQL 是业务对象目录和查询入口。客户端通过短时签名表单直传，FastAPI 核验上传结果后将对象置为可见。删除由后台任务重试，统计由数据库事件异步汇总。</p></div>
+      <div class="grid"><div class="card"><h3>查找</h3><p><span class="tag">设计</span> 支持租户内按名称、桶、时间、大小、类型和预定义标签筛选；分页使用游标。</p></div><div class="card"><h3>统计</h3><p><span class="tag">设计</span> 提供对象数、逻辑字节、按桶与日期聚合；展示汇总时间与统计延迟。</p></div><div class="card"><h3>扩展</h3><p><span class="tag">设计</span> API 与 Worker 无状态水平扩容。PG 先单主高可用，待压测证明必要时再分区或拆分查询负载。</p></div></div>
+    </section>
+
+    <section id="scope" class="section"><h2>01 · 目标与边界</h2>
+      <div class="two"><div class="card"><h3>v1 包含</h3><ul><li><span class="tag">设计</span> 多租户访问控制；服务端生成不可变对象 key。</li><li><span class="tag">设计</span> 单次直传，上限暂定 1 GiB；上传发起、完成核验、查询、下载、删除。</li><li><span class="tag">设计</span> 对象元数据与业务标签查询；桶级及日级逻辑用量统计。</li><li><span class="tag">设计</span> 失败重试、过期上传清理、抽样核对与全量周期核对。</li></ul></div><div class="card"><h3>v1 不包含</h3><ul><li><span class="tag">设计</span> 文件正文检索、OCR、图像相似检索。</li><li><span class="tag">设计</span> 跨地域双活、自动分库分片和用户自助创建 MinIO 桶。</li><li><span class="tag">设计</span> 大于 1 GiB 文件的 multipart 编排；作为后续迭代。</li><li><span class="tag">待确认</span> 法规留存、不可删除对象、跨租户共享等业务规则。</li></ul></div></div>
+      <div class="callout"><span class="tag">边界</span> “统计用量”默认指业务对象逻辑字节与记录数，不等于纠删码、版本、未完成上传或副本带来的物理占用；物理容量由 MinIO 指标单独监控。</div>
+    </section>
+
+    <section id="architecture" class="section"><h2>02 · 总体架构</h2>
+      <div class="arch" role="img" aria-label="客户端经 FastAPI 管理对象目录，通过签名表单上传到 MinIO，FastAPI 使用 PostgreSQL 保存对象索引"><div class="node"><b>客户端 / 管理台</b><span>认证 · 查找 · 直传</span></div><div class="arrow">→</div><div class="node"><b>FastAPI 服务</b><span>授权 · 目录 · 签名 · 核验</span></div><div class="arrow">↔</div><div class="node"><b>PostgreSQL</b><span>对象记录 · 任务 · 汇总</span></div></div>
+      <div class="arch-bottom"><div class="node"><b>MinIO 集群</b><span>客户端经短时 POST 签名表单直传；API/Worker 使用服务账号核验与删除</span></div><div class="node"><b>Worker + Scheduler</b><span>删除重试 · 统计汇总 · 过期清理 · 对账</span></div><div class="node"><b>监控</b><span>API / PG / MinIO / Worker 指标、日志、告警</span></div></div>
+      <p class="small"><span class="tag">依据</span> MinIO Python SDK 提供 <a href="https://docs.min.io/aistor/developers/sdk/python/api/" target="_blank" rel="noopener">presigned_post_policy、stat_object、presigned_get_object 与 remove_object</a> 等能力；FastAPI 官方文档支持按路由与依赖拆分服务，见 <a href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener">Bigger Applications</a>。实际采用版本需在锁定依赖时验证。</p>
+      <div class="callout warn"><span class="tag warn">部署前提</span> v1 所有对象写入和删除必须走本服务。若其他客户端拥有同桶写权限，事件订阅与全量对账须提升为正式的同步路径；否则 PG 目录无法保证完整。</div>
+    </section>
+
+    <section id="data" class="section"><h2>03 · 数据模型</h2>
+      <p><span class="tag">设计</span> 使用独立的对象 ID 对外展示；MinIO key 由服务生成，例如 <b>tenant UUID / object UUID</b>。原始文件名只保存在 PG，避免重名覆盖和用户输入进入物理 key。</p>
+      <div class="tablewrap"><table><thead><tr><th>表</th><th>关键字段</th><th>职责与约束</th></tr></thead><tbody>
+        <tr><td><b>objects</b></td><td>id, tenant_id, bucket, object_key, display_name, size_bytes, content_type, metadata_json, status, created_at, ready_at, deleted_at</td><td><span class="tag">设计</span> 一行对应一个物理对象。唯一约束：bucket + object_key。`status` 为 pending / ready / deleting / deleted / failed；查询默认只见 ready。</td></tr>
+        <tr><td><b>upload_sessions</b></td><td>id, object_id, tenant_id, idempotency_key, expected_size, expires_at, completed_at</td><td><span class="tag">设计</span> 保存上传授权与幂等键；同租户同幂等键返回同一会话。过期会话进入清理流程。</td></tr>
+        <tr><td><b>jobs</b></td><td>id, kind, object_id, attempts, next_run_at, locked_at, done_at, last_error</td><td><span class="tag">设计</span> 与状态变更在同一 PG 事务内写入；Worker 领取删除、清理、对账任务并重试。</td></tr>
+        <tr><td><b>stats_events</b></td><td>id, object_id, event_kind, tenant_id, bucket, occurred_at, size_bytes, processed_at</td><td><span class="tag">设计</span> ready 与 deleted 转移各写一个唯一事件，防止重复计数；事件日期取状态转移日。</td></tr>
+        <tr><td><b>stats_current</b></td><td>tenant_id, bucket, object_count, size_bytes, updated_at</td><td><span class="tag">设计</span> 当前存量汇总；概览和桶列表直接读取此表。</td></tr>
+        <tr><td><b>stats_daily</b></td><td>tenant_id, bucket, day, created_count, created_bytes, deleted_count, deleted_bytes, updated_at</td><td><span class="tag">设计</span> 每日新增和删除流量；Worker 在同一事务中更新两个汇总表并标记事件已处理。</td></tr>
+      </tbody></table></div>
+      <h3>首批索引</h3><div class="tablewrap"><table><thead><tr><th>用途</th><th>索引建议</th><th>说明</th></tr></thead><tbody>
+        <tr><td>对象定位</td><td>UNIQUE(bucket, object_key)；PRIMARY KEY(id)</td><td><span class="tag">设计</span> 物理 key 不复用；API 每次按 tenant_id 再授权。</td></tr>
+        <tr><td>默认列表</td><td>(tenant_id, status, ready_at DESC, id DESC)</td><td><span class="tag">设计</span> 对应默认排序与游标，避免深 OFFSET。</td></tr>
+        <tr><td>桶内列表</td><td>(tenant_id, bucket, status, ready_at DESC, id DESC)</td><td><span class="tag">设计</span> 若桶内列表占主要流量则保留，否则以压测结果裁剪。</td></tr>
+        <tr><td>灵活标签</td><td>metadata_json 的 GIN 索引，按需启用</td><td><span class="tag">设计</span> 仅在确有该类查询时增加；高频字段可提升为独立列。</td></tr>
+      </tbody></table></div>
+      <p class="small"><span class="tag">依据</span> PostgreSQL <a href="https://www.postgresql.org/docs/current/indexes-multicolumn.html" target="_blank" rel="noopener">多列索引</a>、<a href="https://www.postgresql.org/docs/16/datatype-json.html" target="_blank" rel="noopener">JSONB GIN 索引</a>和<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">分区建议</a>。千万级对象不作为自动分区的充分条件。</p>
+    </section>
+
+    <section id="flows" class="section"><h2>04 · 核心流程</h2>
+      <h3>上传：先占位，后核验，再可见</h3><ol class="flow"><li><span class="tag">设计</span> 客户端调用发起接口，提交文件名、大小、类型、标签和幂等键；服务校验租户额度与字段，并在 PG 建立 pending 对象与 upload_session。</li><li><span class="tag">设计</span> 服务生成仅可写指定 bucket/key、有限时间及大小范围的 POST 签名表单；建议签名有效期 10 分钟，会话有效期 30 分钟。</li><li><span class="tag">设计</span> 客户端直传 MinIO，再调用完成接口；服务通过 stat_object 核验对象存在与实际大小，检查会话未过期。</li><li><span class="tag">设计</span> PG 事务将状态由 pending 改为 ready，同时插入统计事件；重复完成请求返回已完成结果。</li><li><span class="tag">设计</span> 过期会话由 Worker 清理 MinIO 残留并标为 failed。若业务要求强内容校验，另增 SHA-256 校验路径，不把 ETag 当作通用内容哈希。</li></ol>
+      <h3>下载与删除</h3><div class="two"><div class="card"><b>下载</b><p><span class="tag">设计</span> API 校验租户、对象状态和下载权限，返回短时 GET 签名 URL（建议 5 分钟）。审计记录签发行为；若需逐字节审计或内容检查，改为代理下载。</p></div><div class="card"><b>删除</b><p><span class="tag">设计</span> API 在 PG 事务中将 ready 置为 deleting，并写入 jobs，返回 202。Worker 删除 MinIO 对象后，再在 PG 将状态置为 deleted 且写统计负增量；失败按退避策略重试。</p></div></div>
+      <div class="callout risk"><span class="tag risk">边界</span> MinIO 操作和 PG 事务不能组成一个原子事务。服务必须容忍“对象已上传、目录未发布”和“目录标记删除、物理对象尚未删”两个中间态，并由任务与对账修复。</div>
+    </section>
+
+    <section id="api" class="section"><h2>05 · API 契约草案</h2><p><span class="tag">设计</span> 前缀统一为 <b>/api/v1</b>；请求身份来自 JWT，tenant_id 从可信令牌或服务端映射获取，不接受用户自行指定租户。所有写接口使用 Idempotency-Key。</p>
+      <div class="tablewrap"><table><thead><tr><th>方法与路径</th><th>输入 / 输出核心字段</th><th>状态与错误</th></tr></thead><tbody>
+        <tr><td>POST /uploads</td><td>文件名、期望大小、类型、标签；返回 upload_id、object_id、POST URL、表单字段、expires_at</td><td>201；400 字段错误；409 幂等冲突；413 超限；429 限流</td></tr>
+        <tr><td>POST /uploads/{id}/complete</td><td>返回对象 ID、实际大小、ready_at</td><td>200；404 会话不存在；409 状态冲突；422 核验不匹配；503 MinIO 暂不可用</td></tr>
+        <tr><td>GET /objects</td><td>bucket、name_prefix、类型、时间/大小区间、标签、limit、cursor；返回 items、next_cursor</td><td>200；400 无效筛选；403 无权限</td></tr>
+        <tr><td>GET /objects/{id}</td><td>返回对象元数据，不返回 MinIO 凭据</td><td>200；404 不存在或无权限</td></tr>
+        <tr><td>POST /objects/{id}/download-url</td><td>返回短时 URL 与到期时间</td><td>200；404；409 非 ready；429</td></tr>
+        <tr><td>DELETE /objects/{id}</td><td>返回任务 ID 与 deleting 状态</td><td>202；404；已删除时幂等返回 204</td></tr>
+        <tr><td>GET /stats/overview</td><td>对象数、逻辑字节、as_of、lag_seconds</td><td>200；统计滞后时仍返回可见时间</td></tr>
+        <tr><td>GET /stats/buckets</td><td>按桶统计，可指定日期区间</td><td>200；限制最大时间跨度</td></tr>
+      </tbody></table></div><p class="small"><span class="tag">设计</span> `GET /objects` 每页最多 100 条；游标编码排序键与过滤条件摘要，过滤条件变化则返回 400。错误响应统一包含 code、message、request_id。</p>
+    </section>
+
+    <section id="search" class="section"><h2>06 · 查找与统计策略</h2>
+      <div class="two"><div class="card"><h3>查询路径</h3><ul><li><span class="tag">设计</span> 精确对象 ID 查询走主键。</li><li><span class="tag">设计</span> 列表查询固定 tenant_id、status=ready；常用筛选建组合索引。</li><li><span class="tag">设计</span> 文件名先支持前缀，不承诺任意子串高性能；标签查询先限定可搜索字段。</li><li><span class="tag">设计</span> 结果按 ready_at、id 稳定排序并用游标翻页。</li></ul></div><div class="card"><h3>统计路径</h3><ul><li><span class="tag">设计</span> 对象 ready/deleted 产生统计事件，Worker 批量归并。</li><li><span class="tag">设计</span> 当前对象数和容量读取 stats_current；每日新增、删除读取 stats_daily，均标示 as_of。</li><li><span class="tag">设计</span> 每日比较当前汇总与 PG 对象明细；发现差异自动重建受影响租户/桶。</li><li><span class="tag">设计</span> 物理容量与业务逻辑容量分别展示。</li></ul></div></div>
+      <p><span class="tag">依据</span> PostgreSQL 的全表精确计数需要检查记录可见性，不宜把频繁看板建立在每次扫描全部对象之上；见 <a href="https://wiki.postgresql.org/wiki/Slow_Counting" target="_blank" rel="noopener">Slow Counting</a>。大 OFFSET 仍需计算跳过的行；见 <a href="https://www.postgresql.org/docs/16/queries-limit.html" target="_blank" rel="noopener">LIMIT/OFFSET</a>。</p>
+    </section>
+
+    <section id="consistency" class="section"><h2>07 · 一致性、幂等与修复</h2><div class="tablewrap"><table><thead><tr><th>故障点</th><th>可见状态</th><th>恢复动作</th></tr></thead><tbody>
+      <tr><td>发起上传后客户端未传</td><td>pending，不对外显示</td><td><span class="tag">设计</span> 会话超时后标 failed；不计入统计。</td></tr>
+      <tr><td>文件已上传但 complete 未到达</td><td>pending，MinIO 有孤儿对象</td><td><span class="tag">设计</span> 客户端可重试 complete；超时清理任务先 HEAD 再删除。</td></tr>
+      <tr><td>complete 重试或并发</td><td>ready 只转移一次</td><td><span class="tag">设计</span> 使用状态条件更新与唯一统计事件；返回同一 object_id。</td></tr>
+      <tr><td>删除 MinIO 失败</td><td>deleting，不可下载</td><td><span class="tag">设计</span> jobs 保留并指数退避重试；超过阈值告警。</td></tr>
+      <tr><td>删除成功、更新 PG 失败</td><td>deleting</td><td><span class="tag">设计</span> 重试删除按幂等处理，随后提交状态与统计事件。</td></tr>
+      <tr><td>统计 Worker 崩溃</td><td>对象状态准确，统计可能滞后</td><td><span class="tag">设计</span> 统计事件与汇总更新在同一事务提交；未处理事件重领。</td></tr>
+    </tbody></table></div>
+      <h3>对账分层</h3><div class="status"><span>每 5 分钟：过期 pending</span><span>每 5 分钟：失败任务重试</span><span>每日：统计明细对账</span><span>每周：按 key 范围全量对象核对</span></div>
+      <p><span class="tag">设计</span> 全量核对采用分页扫描并限速；记录游标，允许中断续跑。对 PG ready 但 MinIO 缺失的记录只标记异常并报警，不自动删除业务记录；对 MinIO 孤儿对象先隔离与记录，再按保留规则清理。</p>
+    </section>
+
+    <section id="security" class="section"><h2>08 · 安全设计</h2><ul class="check"><li><span class="tag">设计</span> FastAPI 校验 JWT 签名、issuer、audience、过期时间及访问范围；每个对象读写都绑定 tenant_id，管理员跨租户查询单独授权。<a href="https://fastapi.tiangolo.com/advanced/security/oauth2-scopes/" target="_blank" rel="noopener">FastAPI scopes 文档</a></li><li><span class="tag">设计</span> MinIO 桶默认私有；客户端只拿单对象、短时有效的上传表单或下载 URL，不拿长期 Access Key。</li><li><span class="tag">设计</span> 服务器凭据使用 Secret 管理，按读、写、删除职责拆分；PG 账号按迁移、API、Worker 分权。</li><li><span class="tag">设计</span> 强制 TLS；限制上传大小、类型、元数据键和值长度；客户端文件名只作为展示文本，下载响应安全编码。</li><li><span class="tag">设计</span> 审计上传发起、完成、下载签发、删除及管理员操作；日志不包含签名 URL、JWT 或凭据。</li></ul></section>
+
+    <section id="deployment" class="section"><h2>09 · 部署与运维</h2>
+      <div class="tablewrap"><table><thead><tr><th>组件</th><th>生产建议</th><th>故障与备份</th></tr></thead><tbody>
+        <tr><td>FastAPI</td><td><span class="tag">设计</span> 至少 2 实例，负载均衡；独立健康检查与连接池上限。</td><td>无状态重启；数据库或 MinIO 异常时返回明确 503。</td></tr>
+        <tr><td>Worker / Scheduler</td><td><span class="tag">设计</span> Worker 可多副本；任务领取使用行锁跳过已锁任务；Scheduler 单活租约。</td><td>任务保存在 PG，可重试与人工重放。</td></tr>
+        <tr><td>PostgreSQL</td><td><span class="tag">设计</span> 单主 + 备库 + PITR；监控连接、WAL、复制延迟、死元组、慢查询。</td><td>定期恢复演练；迁移使用向前兼容步骤。</td></tr>
+        <tr><td>MinIO</td><td><span class="tag">设计</span> 生产采用分布式部署；容量、对象数、失败请求和磁盘状态独立监控。</td><td>版本策略与备份/复制按 RPO、RTO 另行确定。</td></tr>
+      </tbody></table></div>
+      <h3>一键启停交付</h3><p><span class="tag">设计</span> 仓库后续交付 <b>compose.yaml</b>、环境变量模板，以及 Linux 下的 <b>start.sh / stop.sh</b>。脚本负责健康检查与迁移前置校验；生产数据库和 MinIO 可指向外部托管集群。本文是设计稿，不包含实际部署脚本。</p>
+      <h3>观测与告警</h3><p><span class="tag">设计</span> 关键指标：API p95/p99、上传完成失败率、PG 查询与连接池、Worker 待办数/最老任务年龄、统计延迟、PG/MinIO 容量差异、对账异常数量。日志带 request_id、tenant_id、object_id，禁止记录签名 URL。</p>
+    </section>
+
+    <section id="capacity" class="section"><h2>10 · 容量与性能验证</h2>
+      <div class="callout"><span class="tag">估算</span> 基线规模按 1,000 万条 ready 对象设计；平均对象大小、元数据长度、租户分布、更新率和 QPS 尚未知，因此不在设计稿承诺数据库磁盘容量或实际响应时间。数据库占用应通过“对象行 + 索引 + WAL + 历史版本 + 预留空间”实测。</div>
+      <div class="tablewrap"><table><thead><tr><th>验收负载</th><th>目标值</th><th>测量方式</th></tr></thead><tbody>
+        <tr><td>按 ID 查对象</td><td><span class="tag">目标</span> p95 ≤ 100 ms</td><td>1,000 万条样本，含租户鉴权；报告 DB 与 API 分段耗时。</td></tr>
+        <tr><td>常见过滤列表</td><td><span class="tag">目标</span> p95 ≤ 300 ms，每页 100 条</td><td>覆盖桶、时间范围、名称前缀、标签；观察扫描行数与索引命中。</td></tr>
+        <tr><td>上传完成接口</td><td><span class="tag">目标</span> p95 ≤ 500 ms，不计文件传输</td><td>包含 MinIO stat 与 PG 提交；注入重试和并发 complete。</td></tr>
+        <tr><td>统计新鲜度</td><td><span class="tag">目标</span> 正常情况下 ≤ 5 分钟</td><td>持续写入下比较 ready 明细与汇总时间。</td></tr>
+        <tr><td>故障修复</td><td><span class="tag">目标</span> 失败任务重试无重复计数</td><td>在上传、完成、删除、统计事务前后注入故障。</td></tr>
+      </tbody></table></div>
+      <p class="small"><span class="tag">目标</span> 上述数字是待验证的验收门槛，不是 PostgreSQL 或 MinIO 的通用性能承诺。压测必须记录机器配置、PG 参数、索引大小、缓存命中率、对象分布和并发模型。</p>
+      <p><span class="tag">设计</span> 若真实查询触发大范围扫描，先优化索引和查询形态；若统计成为热点，优化批量汇总；若 PG 写入、WAL 或存储持续饱和，再评估分区、读副本或专用搜索引擎。PG 文档提醒分区键和分区数量需根据真实查询选择，见 <a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">分区最佳实践</a>。</p>
+    </section>
+
+    <section id="delivery" class="section"><h2>11 · 交付阶段与验收</h2><div class="grid"><div class="card"><h3>阶段 A · 基础能力</h3><p><span class="tag">设计</span> 数据迁移、身份鉴权、上传三段流程、下载签名、对象列表和详情。验收：重复上传完成不产生重复记录；其他租户无法读取对象。</p></div><div class="card"><h3>阶段 B · 稳定性</h3><p><span class="tag">设计</span> 删除任务、过期清理、统计事件、指标告警。验收：故障注入后最终状态正确且统计不重复。</p></div><div class="card"><h3>阶段 C · 规模验证</h3><p><span class="tag">设计</span> 生成千万级代表性目录、查询压测、对账与恢复演练。验收：达到本方案 SLO 或记录瓶颈及调整结论。</p></div></div></section>
+
+    <section id="risks" class="section"><h2>12 · 风险与待决策项</h2><div class="tablewrap"><table><thead><tr><th>事项</th><th>当前处理</th><th>需确认的业务输入</th></tr></thead><tbody>
+      <tr><td>文件大小与格式</td><td><span class="tag">设计</span> 单文件暂定 ≤ 1 GiB；采用直传 POST 表单。</td><td><span class="tag">待确认</span> 最大文件、是否需要断点续传。</td></tr>
+      <tr><td>多租户存储隔离</td><td><span class="tag">设计</span> 共享私有桶 + tenant UUID 前缀。</td><td><span class="tag">待确认</span> 是否要求每租户独立桶、密钥或账单。</td></tr>
+      <tr><td>元数据检索</td><td><span class="tag">设计</span> 先支持预定义字段、名称前缀和部分 JSONB 标签。</td><td><span class="tag">待确认</span> 标签种类、组合条件和中文全文检索需求。</td></tr>
+      <tr><td>统计口径</td><td><span class="tag">设计</span> ready 对象逻辑字节，异步汇总。</td><td><span class="tag">待确认</span> 是否纳入历史版本、回收站与物理占用。</td></tr>
+      <tr><td>高可用与灾备</td><td><span class="tag">设计</span> PG PITR、MinIO 备份/复制方案按指标选择。</td><td><span class="tag">待确认</span> RPO、RTO、跨机房要求。</td></tr>
+    </tbody></table></div></section>
+
+    <section id="sources" class="section"><h2>资料依据</h2><ul><li><span class="tag">依据</span> <a href="https://docs.min.io/aistor/developers/sdk/python/api/" target="_blank" rel="noopener">MinIO Python SDK API</a>：签名上传、对象检查、签名下载、删除。</li><li><span class="tag">依据</span> <a href="https://docs.min.io/aistor/operations/scaling/expansion/" target="_blank" rel="noopener">MinIO AIStor 扩容</a>：通过新增 server pool 扩容。具体版本和授权须采购或部署前核对。</li><li><span class="tag">依据</span> <a href="https://www.postgresql.org/docs/current/indexes-multicolumn.html" target="_blank" rel="noopener">PostgreSQL 多列索引</a>、<a href="https://www.postgresql.org/docs/16/datatype-json.html" target="_blank" rel="noopener">JSONB 索引</a>、<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">表分区</a>。</li><li><span class="tag">依据</span> <a href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener">FastAPI 项目组织</a>与<a href="https://fastapi.tiangolo.com/advanced/security/oauth2-scopes/" target="_blank" rel="noopener">访问范围</a>。</li></ul><p class="small">[说明] 外部文档用于确认产品能力；API 路径、数据表、时限、SLO、清理周期均为本方案设计或目标，尚未实现和实测。</p></section>
+    <footer>对象存储管理服务设计方案 · v2 · UTF-8 HTML · 本地可独立打开</footer>
+  </main>
+</div>
+<script>
+  // 中文注释：主题持久化失败时保持页面可用。
+  try {
+    const saved = localStorage.getItem('object-store-design-theme');
+    if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+  } catch (error) { console.warn('主题偏好读取失败', error); }
+  const themeButton = document.getElementById('themeButton');
+  if (themeButton) themeButton.addEventListener('click', () => {
+    try {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('object-store-design-theme', next);
+    } catch (error) { console.warn('主题偏好保存失败', error); }
+  });
+  // 中文注释：目录高亮失败不影响正文阅读。
+  try {
+    const links = [...document.querySelectorAll('#toc a')];
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach(link => link.classList.toggle('active', link.hash === '#' + visible.target.id));
+    }, {rootMargin:'-10% 0px -65% 0px', threshold:[0,.1,.5]});
+    document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
+  } catch (error) { console.warn('目录高亮不可用', error); }
+</script>
+</body>
+</html>

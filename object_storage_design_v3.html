@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>文档与附件对象存储管理方案 v3 · PostgreSQL + MinIO + FastAPI</title>
+  <style>
+    :root{--bg:#f4f7fb;--surface:#fff;--soft:#edf3fa;--ink:#1c2b3c;--muted:#56677b;--line:#d9e3ed;--brand:#1765c1;--accent:#0c8a83;--warn:#a66a00;--risk:#b24c4c;--shadow:0 12px 34px rgba(20,45,80,.07)}
+    [data-theme="dark"]{--bg:#0e1520;--surface:#162335;--soft:#203145;--ink:#e9f1f9;--muted:#b1bfd0;--line:#34475d;--brand:#86baff;--accent:#69d2c8;--warn:#e9bb66;--risk:#ef9696;--shadow:0 12px 34px rgba(0,0,0,.2)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.72 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}a:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:3px}.layout{display:grid;grid-template-columns:246px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;border-right:1px solid var(--line);background:var(--surface);padding:24px 18px}.brand{font-weight:800;line-height:1.4;color:var(--brand);margin-bottom:18px}.sidebar a{display:block;color:var(--muted);font-size:13px;padding:7px 10px;border-radius:8px}.sidebar a:hover,.sidebar a.active{background:var(--soft);color:var(--ink);text-decoration:none}.sidebar small{display:block;color:var(--muted);font-size:11px;margin:22px 9px}main{width:min(1190px,100%);padding:38px clamp(20px,4vw,58px) 86px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.eyebrow{color:var(--brand);font-size:12px;letter-spacing:.12em;font-weight:800;text-transform:uppercase}.theme{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer}h1{font-size:clamp(30px,4vw,47px);line-height:1.15;letter-spacing:-.03em;margin:21px 0 18px}h2{font-size:25px;letter-spacing:-.02em;margin:0 0 17px}h3{font-size:17px;margin:21px 0 9px}p{margin:.5em 0 1em}.lead{font-size:17px;color:var(--muted);max-width:850px}.pills{display:flex;flex-wrap:wrap;gap:8px;margin:23px 0}.pill{border:1px solid var(--line);border-radius:100px;background:var(--surface);padding:5px 10px;color:var(--muted);font-size:12px}.section{margin-top:55px;scroll-margin-top:22px}.hero{background:linear-gradient(135deg,#164b9a,#1875ae 70%,#128b83);color:#fff;border-radius:19px;padding:24px 28px;box-shadow:var(--shadow);margin:28px 0}.hero strong{font-size:18px}.hero p{color:#eaf5ff;margin:7px 0 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.card,.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}.card h3{margin:0 0 5px}.card p:last-child{margin-bottom:0}.tag{display:inline-block;background:var(--soft);color:var(--brand);border-radius:5px;padding:1px 5px;font-size:11px;line-height:1.5;font-weight:800;white-space:nowrap}.tag.goal{color:var(--accent)}.tag.warn{color:var(--warn)}.tag.risk{color:var(--risk)}.muted{font-size:13px;color:var(--muted)}.callout{border-left:4px solid var(--brand);background:var(--soft);padding:13px 17px;border-radius:0 10px 10px 0;margin:16px 0}.callout.warn{border-color:var(--warn)}.callout.risk{border-color:var(--risk)}.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:13px}table{border-collapse:collapse;width:100%;min-width:720px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px 13px}th{background:var(--soft);font-size:13px}tr:last-child td{border-bottom:0}ul,ol{padding-left:22px}li{margin:6px 0}.arch{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin:18px 0}.node{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px;text-align:center;min-height:92px;display:flex;flex-direction:column;justify-content:center}.node b{font-size:16px}.node span{font-size:12px;color:var(--muted)}.arrow{font-size:22px;color:var(--brand);font-weight:800}.subarch{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.rel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.rel .node{position:relative;min-height:110px}.rel .node:not(:last-child):after{content:"→";position:absolute;right:-17px;top:35%;font-size:19px;color:var(--brand);z-index:2}.steps{counter-reset:step;display:grid;gap:9px;padding:0}.steps li{list-style:none;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px 14px 12px 50px;margin:0}.steps li:before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:13px;background:var(--brand);color:#fff;border-radius:50%;height:23px;width:23px;display:grid;place-items:center;font-size:12px;font-weight:800}.kpis{display:flex;flex-wrap:wrap;gap:8px}.kpis span{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px}footer{border-top:1px solid var(--line);margin-top:55px;padding-top:17px;color:var(--muted);font-size:12px}@media(max-width:950px){.layout{display:block}.sidebar{height:auto;position:static;border-right:0;border-bottom:1px solid var(--line);padding:12px 20px}.sidebar nav,.sidebar small{display:none}.brand{margin:0}.grid,.two,.subarch,.rel{grid-template-columns:1fr}.rel .node:after{display:none}.arch{grid-template-columns:1fr}.arrow{text-align:center;transform:rotate(90deg)}main{padding-top:24px}}@media print{.layout{display:block}.sidebar,.theme{display:none}main{width:100%;padding:0}.section{break-inside:avoid;margin-top:30px}.card,.box,.hero{box-shadow:none}a{color:inherit;text-decoration:underline}}
+  </style>
+</head>
+<body>
+<div class="layout"><aside class="sidebar" aria-label="目录"><div class="brand">DOCUMENT OBJECT STORE<br>方案设计 v3</div><nav id="toc">
+  <a href="#summary">执行摘要</a><a href="#requirements">01 场景与范围</a><a href="#architecture">02 系统架构</a><a href="#model">03 领域与数据模型</a><a href="#ingestion">04 持续入库与版本发布</a><a href="#read">05 读取与附件访问</a><a href="#api">06 API 契约</a><a href="#indexes">07 索引与容量</a><a href="#consistency">08 一致性与回收</a><a href="#statistics">09 统计与观测</a><a href="#deployment">10 部署与恢复</a><a href="#acceptance">11 验收计划</a><a href="#decisions">12 待决策项</a><a href="#sources">资料依据</a>
+</nav><small>标签：[设计] 拟实施；[依据] 可核对资料；[目标] 待验收；[估算] 非实测；[待确认] 业务输入。</small></aside>
+<main>
+  <div class="top"><div class="eyebrow">Solution Blueprint / 2026-10-09</div><button class="theme" id="themeButton" type="button" aria-label="切换深色模式">切换主题</button></div>
+  <h1>文档、版本与附件管理服务<br>PostgreSQL + MinIO + FastAPI</h1>
+  <p class="lead"><span class="tag">设计</span> 面向数千万篇文档及图片附件、持续多任务入库、按稳定文档 ID 读取和版本追溯。PostgreSQL 管理身份、版本、关系和查询；MinIO 保存正文与图片字节。</p>
+  <div class="pills"><span class="pill">版本 v3</span><span class="pill">核心对象：文档 / 版本 / Blob / 附件关系</span><span class="pill">持续入库</span><span class="pill">多租户可选</span><span class="pill">HTML 单文件方案</span></div>
+
+  <section id="summary" class="section"><div class="hero"><strong>核心选择</strong><p><span class="tag">设计</span> 以文档 ID 作为长期稳定身份；每次抓取或解析形成不可变版本。只有当该版本的正文和附件全部达到可读状态，才在同一 PostgreSQL 事务中更新文档的当前版本指针。Blob 保持不可变，引用关系由关系表表达。</p></div>
+    <div class="grid"><div class="card"><h3>主库</h3><p><span class="tag">建议</span> PostgreSQL 作为正式共享元数据主库；单主高可用起步。总条数本身不要求分布式 SQL。</p></div><div class="card"><h3>字节存储</h3><p><span class="tag">设计</span> MinIO 保存正文、原始文件与图片；PG 只保存位置、哈希、大小、媒体类型和关系。</p></div><div class="card"><h3>查询范围</h3><p><span class="tag">设计</span> 优先支持按 ID、来源标识、类型和时间读取；文件正文全文检索不在第一版内。</p></div></div>
+  </section>
+
+  <section id="requirements" class="section"><h2>01 · 场景与范围</h2><div class="two"><div class="box"><h3>已知业务方向</h3><ul><li><span class="tag">依据</span> 用户补充：规模为数千万篇文档与图片，数据持续入库，按 ID 读取，需管理版本和附件关系。</li><li><span class="tag">设计</span> 支持多任务或多机器写入；按来源、类型、时间和有限差异化属性筛选。</li><li><span class="tag">设计</span> 正文可为 HTML、文本、PDF 等，附件与图片以 Blob 表示；解析出的文本可在后续接入检索引擎。</li></ul></div><div class="box"><h3>第一版边界</h3><ul><li><span class="tag">设计</span> 保留原始对象、处理后的正文及附件，但不在 PG 中保存大正文。</li><li><span class="tag">设计</span> 版本追加、当前版本切换、版本列表和附件列表可用；历史版本默认保留。</li><li><span class="tag">设计</span> 不承诺跨地域双活、OCR、内容全文检索或按图片内容搜索。</li><li><span class="tag">待确认</span> 是否需要法规留存、去重、删除权及文档级 ACL。</li></ul></div></div><div class="callout"><span class="tag">口径</span> 文档数、版本数、Blob 数、附件关系数是不同指标。物理存储占用还包含 MinIO 冗余、对象版本和未完成上传，不可直接由 PG 逻辑字节推得。</div></section>
+
+  <section id="architecture" class="section"><h2>02 · 系统架构</h2><div class="arch" role="img" aria-label="采集任务经 FastAPI 写入 PostgreSQL 目录，文件字节写入 MinIO"><div class="node"><b>采集器 / 解析器</b><span>多任务、多机器，携带来源 ID 与幂等键</span></div><div class="arrow">→</div><div class="node"><b>FastAPI 服务</b><span>认证、入库会话、版本发布、按 ID 读取</span></div><div class="arrow">↔</div><div class="node"><b>PostgreSQL</b><span>文档、版本、Blob、关系、任务</span></div></div><div class="subarch"><div class="node"><b>MinIO 集群</b><span>原文、正文、图片、附件的不可变字节</span></div><div class="node"><b>后台 Worker</b><span>验证、清理、重试、对账、统计</span></div><div class="node"><b>监控与备份</b><span>API / DB / MinIO / Worker 指标与恢复演练</span></div></div><p class="muted"><span class="tag">设计</span> API 与 Worker 无状态，可水平增加实例；PG 按单主写入设计。MinIO 可独立扩容。外部采集器不得直接改 PG 业务表。</p></section>
+
+  <section id="model" class="section"><h2>03 · 领域与数据模型</h2><div class="rel" role="img" aria-label="documents 指向 document_versions，版本引用 blobs，document_assets 关联版本和 Blob"><div class="node"><b>documents</b><span>稳定逻辑身份、当前版本指针</span></div><div class="node"><b>document_versions</b><span>追加式历史，正文 Blob</span></div><div class="node"><b>document_assets</b><span>版本与附件的关系</span></div><div class="node"><b>blobs</b><span>MinIO key、哈希、大小、类型</span></div></div>
+    <div class="tablewrap"><table><thead><tr><th>表</th><th>关键字段</th><th>职责与约束</th></tr></thead><tbody>
+      <tr><td><b>documents</b></td><td>id, tenant_id, source, external_id, doc_type, title, attrs_jsonb, current_version_id, created_at, updated_at</td><td><span class="tag">设计</span> 一篇逻辑文档一行。`(tenant_id, source, external_id)` 唯一；`current_version_id` 可空，且必须属于本 document。频繁查询字段用普通列。</td></tr>
+      <tr><td><b>document_versions</b></td><td>id, document_id, version_no, source_revision, ingest_key, raw_blob_id, body_blob_id, parser_version, status, captured_at, published_at</td><td><span class="tag">设计</span> 追加式版本。`(document_id, version_no)` 唯一；`(document_id, ingest_key)` 唯一以防任务重试重复建版。状态 staging / ready / failed。</td></tr>
+      <tr><td><b>blobs</b></td><td>id, tenant_id, bucket, object_key, sha256, size_bytes, media_type, status, created_at</td><td><span class="tag">设计</span> 只保存对象存储定位信息。`(bucket, object_key)` 唯一；key 用服务生成的 UUID，正文和图片字节不入 PG。第一版不做自动跨文档去重。</td></tr>
+      <tr><td><b>document_assets</b></td><td>version_id, blob_id, role, ordinal, reference_name, attrs_jsonb</td><td><span class="tag">设计</span> 版本与图片/附件的多对多关系；`(version_id, role, ordinal)` 唯一。引用名称保留原文中的链接或标识。</td></tr>
+      <tr><td><b>ingest_jobs</b></td><td>id, tenant_id, source, external_id, ingest_key, status, attempts, next_run_at, last_error</td><td><span class="tag">设计</span> 独立记录处理过程和重试，不把高频任务状态堆在 documents 行上。</td></tr>
+      <tr><td><b>outbox_events</b></td><td>id, aggregate_id, event_kind, payload, created_at, processed_at</td><td><span class="tag">设计</span> 同 PG 事务写入发布、统计、清理事件，供 Worker 幂等消费。</td></tr>
+    </tbody></table></div>
+    <div class="callout warn"><span class="tag warn">关系约束</span> 当前版本属于对应文档这一条件必须由复合外键或等效数据库约束保证，避免指针误指其他文档的版本。删除 Blob 前必须确认所有正文、原文和附件引用均已解除。</div>
+    <p class="muted"><span class="tag">设计</span> DOI、栏目、图像尺寸等差异化属性先按查询频率决定：常用条件提升为独立列；其余放 JSONB。版本和附件列表保持关系表，不不断追加进单个 JSON。</p>
+  </section>
+
+  <section id="ingestion" class="section"><h2>04 · 持续入库与版本发布</h2><ol class="steps"><li><span class="tag">设计</span> 采集器提交 source、external_id、ingest_key、文档类型和预期附件清单；API 用唯一约束定位或创建 documents，并创建 staging 版本。重复 ingest_key 返回原会话。</li><li><span class="tag">设计</span> API 为原文、正文和每个附件生成独立、不可覆盖的 Blob key 与短时上传凭证；采集器直传 MinIO。大文件的 multipart 编排作为独立实现项。</li><li><span class="tag">设计</span> 采集器提交完成；服务对每个 Blob 执行 HEAD/stat，核验存在、大小和预期 SHA-256。若存储端不提供可信的该哈希核验，须采用受控流式校验或业务可信采集器证明，不能把 multipart ETag 当作 SHA-256。</li><li><span class="tag">设计</span> PG 单事务内：将 Blob 与版本置为 ready、写入附件关系、按发布策略更新 documents.current_version_id、插入 outbox_events。事务提交后新版本才对普通读取可见。</li><li><span class="tag">设计</span> 发布策略默认“已完成的最高 version_no 成为当前版本”；晚到的旧来源修订保留为历史，不回退当前版本。若来源自身有可靠单调 revision，可按其排序。</li></ol>
+    <div class="callout risk"><span class="tag risk">一致性边界</span> MinIO 与 PostgreSQL 不共享事务。已上传但未发布的 Blob 属于暂存对象，必须由会话超时清理与周期对账回收；失败版本不会被当前版本指针引用。</div>
+  </section>
+
+  <section id="read" class="section"><h2>05 · 按 ID 读取与附件访问</h2><div class="two"><div class="card"><h3>当前版本读取</h3><p><span class="tag">设计</span> 按 document ID 查 documents.current_version_id；一次读取版本和关联 Blob 信息。响应包括文档字段、版本号、正文对象描述和附件清单。正文可返回短时下载 URL 或由服务代理。</p></div><div class="card"><h3>历史版本读取</h3><p><span class="tag">设计</span> 按 `(document_id, version_no)` 获取特定版本；版本列表按 version_no 倒序。附件关系固定在版本上，因此历史正文始终对应当时的图片与附件清单。</p></div></div><p><span class="tag">设计</span> 默认 API 不在“文档列表”中批量展开全部附件；详情页按需获取，避免列表读造成大量 JOIN 或 N+1 请求。客户端只能访问已授权文档所引用的 Blob。</p></section>
+
+  <section id="api" class="section"><h2>06 · FastAPI API 契约</h2><p><span class="tag">设计</span> 路径前缀 `/api/v1`；读写接口按 tenant_id 或业务访问范围授权。所有入库写操作要求 Idempotency-Key；错误体统一为 code、message、request_id。</p><div class="tablewrap"><table><thead><tr><th>方法 / 路径</th><th>核心用途</th><th>主要状态</th></tr></thead><tbody>
+    <tr><td>POST /ingest-sessions</td><td>用 source + external_id + ingest_key 建文档或暂存版本，返回会话与 Blob 上传凭证</td><td>201 / 200 幂等；409 标识冲突；422 字段错误</td></tr>
+    <tr><td>POST /ingest-sessions/{id}/complete</td><td>核验所有 Blob 并发布版本，返回 document_id、version_no</td><td>200；409 状态冲突；422 校验失败；503 存储暂不可用</td></tr>
+    <tr><td>GET /documents/{id}</td><td>按稳定 ID 读文档及当前版本摘要</td><td>200；404 不存在或无权限</td></tr>
+    <tr><td>GET /documents</td><td>来源、类型、时间、有限属性筛选；游标分页</td><td>200；400 无效筛选；403 无权限</td></tr>
+    <tr><td>GET /documents/{id}/versions</td><td>历史版本列表</td><td>200；404</td></tr>
+    <tr><td>GET /documents/{id}/versions/{no}</td><td>某版本与其正文、图片、附件清单</td><td>200；404</td></tr>
+    <tr><td>POST /blobs/{id}/download-url</td><td>校验引用文档权限后签发短时下载 URL</td><td>200；403；404；409 Blob 未 ready</td></tr>
+    <tr><td>GET /stats/overview</td><td>文档、版本、附件关系和逻辑字节统计；携带 as_of</td><td>200</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">设计</span> 管理 API 中另提供失败任务重试、对账结果和审计查询，默认不向普通采集器开放。</p></section>
+
+  <section id="indexes" class="section"><h2>07 · 索引与容量</h2><div class="tablewrap"><table><thead><tr><th>表 / 查询</th><th>首批索引</th><th>选择理由</th></tr></thead><tbody>
+    <tr><td>documents 按 ID</td><td>PRIMARY KEY(id)；必要时 `(tenant_id, id)`</td><td><span class="tag">设计</span> 按 ID 定位是主路径；权限过滤必须包含租户或访问范围。</td></tr>
+    <tr><td>来源幂等</td><td>UNIQUE(tenant_id, source, external_id)</td><td><span class="tag">设计</span> 同一来源对象只对应一个逻辑文档。</td></tr>
+    <tr><td>版本读取</td><td>UNIQUE(document_id, version_no)；UNIQUE(document_id, ingest_key)</td><td><span class="tag">设计</span> 快速取历史版本，并约束重试。</td></tr>
+    <tr><td>附件列表</td><td>(version_id, role, ordinal)</td><td><span class="tag">设计</span> 先按版本定位，再按角色和顺序展示。</td></tr>
+    <tr><td>文档筛选</td><td>真实高频条件对应组合索引</td><td><span class="tag">设计</span> 来源、类型、时间组合需由查询日志和压测决定，不预建所有排列。</td></tr>
+    <tr><td>差异化属性</td><td>按需添加 JSONB GIN 或表达式索引</td><td><span class="tag">设计</span> 避免把整个 JSONB 默认索引化导致入库成本上升。</td></tr>
+  </tbody></table></div><p><span class="tag">判断</span> 数千万篇文档本身不足以要求分布式数据库。documents 主要按 ID 读，默认不按时间分区；抓取历史、任务日志等按时间清理的数据可优先评估时间分区。分区键必须能被常见查询利用，否则可能增加维护和规划成本。<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">PostgreSQL 分区文档</a></p><div class="callout"><span class="tag warn">估算</span> 若 3,000 万篇文档的有效字段平均为 1 KB，仅字段载荷约 30 GB（十进制）；不含行开销、索引、版本、附件关系、WAL、备份与预留空间。容量须由样本数据装载后实测。</div></section>
+
+  <section id="consistency" class="section"><h2>08 · 一致性、幂等与对象回收</h2><div class="tablewrap"><table><thead><tr><th>情形</th><th>处理</th></tr></thead><tbody>
+    <tr><td>重复采集相同文档</td><td><span class="tag">设计</span> `(tenant_id, source, external_id)` 定位逻辑文档；同 ingest_key 返回同一版本，新的有效修订追加版本。</td></tr>
+    <tr><td>Blob 已上传，PG 发布失败</td><td><span class="tag">设计</span> 版本保持 staging；重试 complete；超过 TTL 的暂存 Blob 标记并清理。</td></tr>
+    <tr><td>附件上传不完整</td><td><span class="tag">设计</span> 整版不发布；详情仍读旧 current_version_id。允许重新上传缺失附件再完成。</td></tr>
+    <tr><td>两个任务并发发布</td><td><span class="tag">设计</span> 在文档行上串行更新当前版本指针，并比较版本顺序；唯一约束负责幂等。</td></tr>
+    <tr><td>删除某历史版本</td><td><span class="tag">设计</span> 先解除关系并确认不是当前版本；Blob 仅在无引用且保留期结束后删除。</td></tr>
+    <tr><td>PG 与 MinIO 不一致</td><td><span class="tag">设计</span> 定期比对 ready Blob 的对象存在性和暂存对象；缺失对象报警，不静默删目录。</td></tr>
+  </tbody></table></div><p><span class="tag">设计</span> 任务重试使用数据库持久化状态；统计与清理事件通过 outbox 事务写入。对账按 key 范围分页、限速、记录游标，并定期演练“PG 已恢复但 MinIO 对象缺失”及相反情形。</p></section>
+
+  <section id="statistics" class="section"><h2>09 · 统计与观测</h2><div class="two"><div class="card"><h3>业务统计</h3><p><span class="tag">设计</span> 分别统计当前文档数、总版本数、正文 Blob 数、图片与附件关系数、逻辑字节。汇总表从发布/删除事件增量更新，并返回 as_of；每日抽样或分片校验明细。</p></div><div class="card"><h3>运行指标</h3><p><span class="tag">设计</span> 监控入库速率、发布失败率、暂存年龄、Worker 积压、按 ID 查询 p95/p99、PG 索引与 WAL 增长、MinIO 容量及对象缺失数。</p></div></div><div class="callout warn"><span class="tag warn">口径</span> “附件数量”默认指文档版本与 Blob 的关系数；同一图片被多个版本引用会计多条关系，但物理 Blob 数可能更少。应在报表中分别展示。</div></section>
+
+  <section id="deployment" class="section"><h2>10 · 部署与恢复</h2><div class="tablewrap"><table><thead><tr><th>组件</th><th>生产建议</th><th>恢复验证</th></tr></thead><tbody>
+    <tr><td>FastAPI / Worker</td><td><span class="tag">设计</span> 至少双实例、无状态；连接池和并发上限受 PG 容量约束。</td><td>重启和任务重试不创建重复版本。</td></tr>
+    <tr><td>PostgreSQL</td><td><span class="tag">设计</span> 单主与备库、PITR、独立备份；首先优化查询与索引，再考虑读副本。</td><td>在隔离环境恢复到时间点，校验文档/版本/关系完整。</td></tr>
+    <tr><td>MinIO</td><td><span class="tag">设计</span> 分布式部署；生命周期与复制策略按保留要求设定。</td><td>抽查由 PG blobs 定位的正文及附件均可读取。</td></tr>
+    <tr><td>脚本</td><td><span class="tag">设计</span> 实施阶段交付 compose.yaml、环境模板、Linux start.sh / stop.sh。</td><td>启动前验证依赖、迁移与凭据，停止时等待正在发布的事务完成。</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">设计</span> MinIO 与 PG 的备份时间点需要可对应；恢复后先运行只读对账，再决定是否开放新入库。实际 RPO/RTO 需业务确定。</p></section>
+
+  <section id="acceptance" class="section"><h2>11 · 验收计划</h2><div class="tablewrap"><table><thead><tr><th>场景</th><th>验收标准</th></tr></thead><tbody>
+    <tr><td>稳定 ID 与版本</td><td><span class="tag goal">目标</span> 同来源标识重复入库只保留一篇逻辑文档；有效新修订追加版本；旧版可读且附件清单不变。</td></tr>
+    <tr><td>故障注入</td><td><span class="tag goal">目标</span> Blob 上传、版本发布、当前指针更新前后中断均可重试或回收；不出现指向未就绪 Blob 的当前版本。</td></tr>
+    <tr><td>规模装载</td><td><span class="tag goal">目标</span> 生成代表性的 3,000 万篇文档及实际比例的版本和附件关系；记录表/索引/WAL/备份体积。</td></tr>
+    <tr><td>读性能</td><td><span class="tag goal">目标</span> 按 ID 获取当前版本 p95 ≤ 150 ms；版本列表 p95 ≤ 250 ms。目标值不含正文传输，需在指定硬件和并发下实测。</td></tr>
+    <tr><td>入库与恢复</td><td><span class="tag goal">目标</span> 按预计峰值持续入库 24 小时无丢失或重复版本；完成 PG 时间点恢复和 MinIO 对账演练。</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">待确认</span> 峰值文档/秒、平均版本数、附件数、正文大小与并发读取量尚未给出，压测数据分布必须据此修订。</p></section>
+
+  <section id="decisions" class="section"><h2>12 · 待决策项与选型边界</h2><div class="tablewrap"><table><thead><tr><th>问题</th><th>默认方案</th><th>改变方案的条件</th></tr></thead><tbody>
+    <tr><td>元数据主库</td><td><span class="tag">建议</span> PostgreSQL</td><td>团队已有成熟 MySQL 体系可继续用 MySQL；单机离线、主要只读可评估 SQLite；实测单主写入或跨地域要求超出能力时再评估分布式 SQL。</td></tr>
+    <tr><td>文档去重</td><td><span class="tag">设计</span> 按来源外部 ID 做逻辑去重，Blob 不跨文档自动去重。</td><td>内容重复率高且物理成本显著时再引入按哈希去重及引用计数。</td></tr>
+    <tr><td>版本定义</td><td><span class="tag">设计</span> 每次有效抓取/解析产出版本。</td><td>需明确“相同原文、不同解析器版本”是否产生新版本，以及来源 revision 的可信度。</td></tr>
+    <tr><td>文件正文搜索</td><td><span class="tag">设计</span> 第一版不包含。</td><td>若必须按词、段落或图像内容检索，另设抽取与搜索索引，不把文件内容塞进 PG 元数据表。</td></tr>
+    <tr><td>版本与删除策略</td><td><span class="tag">设计</span> 历史版默认保留，Blob 无引用且超过保留期才回收。</td><td>需确定保留期、删除权、法律冻结及成本预算。</td></tr>
+  </tbody></table></div></section>
+
+  <section id="sources" class="section"><h2>资料依据</h2><ul><li><span class="tag">依据</span> 用户提供的场景与数据库选型分析：数千万文档与图片、持续入库、按 ID 读取、版本和附件关系。</li><li><span class="tag">依据</span> <a href="https://www.postgresql.org/docs/current/indexes-types.html" target="_blank" rel="noopener">PostgreSQL 索引类型</a>、<a href="https://www.postgresql.org/docs/current/datatype-json.html" target="_blank" rel="noopener">JSONB</a>、<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">表分区</a>。</li><li><span class="tag">依据</span> <a href="https://docs.min.io/aistor/developers/sdk/python/api/" target="_blank" rel="noopener">MinIO Python SDK API</a>：对象上传、检查、签名下载。商业版与社区版的实际功能、授权及版本需在部署前单独核对。</li><li><span class="tag">依据</span> <a href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener">FastAPI 模块化应用</a>与<a href="https://fastapi.tiangolo.com/advanced/security/oauth2-scopes/" target="_blank" rel="noopener">访问范围</a>。</li></ul><p class="muted"><span class="tag">说明</span> 本文为方案设计；表结构、接口、流程、性能目标尚未实现或压测。外部资料仅作为产品能力依据。</p></section>
+  <footer>文档与附件对象存储管理方案 · v3 · UTF-8 HTML · 可独立打开</footer>
+</main></div>
+<script>
+  // 中文注释：主题偏好不可用时，保留系统默认主题。
+  try {
+    const saved = localStorage.getItem('document-object-design-theme');
+    if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch (error) { console.warn('读取主题偏好失败', error); }
+  const themeButton = document.getElementById('themeButton');
+  if (themeButton) themeButton.addEventListener('click', () => {
+    try {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('document-object-design-theme', next);
+    } catch (error) { console.warn('保存主题偏好失败', error); }
+  });
+  // 中文注释：目录高亮只增强导航，不影响内容阅读。
+  try {
+    const links = [...document.querySelectorAll('#toc a')];
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(item => item.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach(link => link.classList.toggle('active', link.hash === '#' + visible.target.id));
+    }, {rootMargin:'-10% 0px -65% 0px', threshold:[0,.1,.5]});
+    document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
+  } catch (error) { console.warn('目录高亮不可用', error); }
+</script>
+</body>
+</html>

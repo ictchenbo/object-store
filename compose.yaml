@@ -1,0 +1,156 @@
+# 中文注释：开发/单机部署编排。生产环境建议在反代终止 TLS，并将 MinIO/PostgreSQL 换为高可用集群。
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: objectstore
+      POSTGRES_USER: objectstore
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 设置强 POSTGRES_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U objectstore -d objectstore"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging: *logging
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?请在 .env 设置 MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?请在 .env 设置强 MINIO_ROOT_PASSWORD}
+    # 中文注释：默认仅本机可访问；远程客户端直传需自行调整端口映射与 MINIO_PUBLIC_ENDPOINT
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - minio_data:/data
+    logging: *logging
+
+  # 中文注释：一次性初始化——创建应用子用户与最小权限策略、建桶；应用不再使用 root 凭据
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    restart: "no"
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?请在 .env 设置 MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?请在 .env 设置强 MINIO_ROOT_PASSWORD}
+      MINIO_APP_USER: ${MINIO_APP_USER:?请在 .env 设置 MINIO_APP_USER}
+      MINIO_APP_PASSWORD: ${MINIO_APP_PASSWORD:?请在 .env 设置强 MINIO_APP_PASSWORD}
+      MINIO_BUCKET: ${MINIO_BUCKET:-objects}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        until mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD" >/dev/null 2>&1; do
+          sleep 2
+        done
+        printf '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["arn:aws:s3:::%s","arn:aws:s3:::%s/*"]}]}' "$$MINIO_BUCKET" "$$MINIO_BUCKET" > /tmp/app-rw.json
+        mc admin user add local "$$MINIO_APP_USER" "$$MINIO_APP_PASSWORD" 2>/dev/null || \
+          mc admin user update local "$$MINIO_APP_USER" "$$MINIO_APP_PASSWORD"
+        mc admin policy create local app-rw /tmp/app-rw.json 2>/dev/null || {
+          mc admin policy remove local app-rw 2>/dev/null || true
+          mc admin policy create local app-rw /tmp/app-rw.json
+        }
+        mc admin policy attach local app-rw --user "$$MINIO_APP_USER" 2>/dev/null || true
+        mc mb "local/$$MINIO_BUCKET" 2>/dev/null || true
+        echo "minio-init 完成"
+    logging: *logging
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      DATABASE_URL: postgresql+psycopg2://objectstore:${POSTGRES_PASSWORD:?请在 .env 设置强 POSTGRES_PASSWORD}@postgres:5432/objectstore
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-127.0.0.1:9000}
+      MINIO_ACCESS_KEY: ${MINIO_APP_USER:?请在 .env 设置 MINIO_APP_USER}
+      MINIO_SECRET_KEY: ${MINIO_APP_PASSWORD:?请在 .env 设置强 MINIO_APP_PASSWORD}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      MINIO_REGION: us-east-1
+      MINIO_BUCKET: ${MINIO_BUCKET:-objects}
+      API_KEYS_JSON: ${API_KEYS_JSON:?请在 .env 设置 API_KEYS_JSON}
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:3000/health/ready', timeout=3).status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    logging: *logging
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      DATABASE_URL: postgresql+psycopg2://objectstore:${POSTGRES_PASSWORD:?请在 .env 设置强 POSTGRES_PASSWORD}@postgres:5432/objectstore
+      MINIO_ENDPOINT: minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-127.0.0.1:9000}
+      MINIO_ACCESS_KEY: ${MINIO_APP_USER:?请在 .env 设置 MINIO_APP_USER}
+      MINIO_SECRET_KEY: ${MINIO_APP_PASSWORD:?请在 .env 设置强 MINIO_APP_PASSWORD}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+      MINIO_REGION: us-east-1
+      MINIO_BUCKET: ${MINIO_BUCKET:-objects}
+      API_KEYS_JSON: ${API_KEYS_JSON:?请在 .env 设置 API_KEYS_JSON}
+    # 中文注释：worker 无 HTTP 端口，用进程存活作健康信号。
+    # 镜像内没有 pgrep/procps，改用 kill -0 探测 PID 1（即 python -m app.worker 主进程）。
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    environment:
+      TLS_ENABLED: ${TLS_ENABLED:-false}
+      FORCE_HTTPS: ${FORCE_HTTPS:-false}
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-127.0.0.1:9000}
+      MINIO_SECURE: ${MINIO_SECURE:-false}
+    ports:
+      - "18000:18000"
+      - "18443:18443"
+    volumes:
+      - ./certs:/certs:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:18000/ || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      api:
+        condition: service_healthy
+    logging: *logging
+
+volumes:
+  pg_data:
+  minio_data:

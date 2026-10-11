@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.venv/
+tests/
+*.html
+*.pyc
+.env
+frontend/
+var/
+tmp/
+certs/
+.ruff_cache/

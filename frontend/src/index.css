@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 中文注释：设计变量对齐 object_storage_design_v7 的蓝-青品牌色，浅色/深色双主题。 */
+@layer base {
+  :root {
+    --background: 214 45% 97%;
+    --foreground: 212 32% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 212 32% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 212 32% 17%;
+    --primary: 212 79% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 30% 93%;
+    --secondary-foreground: 212 32% 20%;
+    --muted: 210 28% 93%;
+    --muted-foreground: 212 16% 41%;
+    --accent: 178 58% 30%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 212 28% 86%;
+    --input: 212 28% 84%;
+    --ring: 212 79% 42%;
+    --brand: 212 79% 42%;
+    --brand-foreground: 0 0% 100%;
+    --success: 160 60% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 36 80% 35%;
+    --warning-foreground: 0 0% 100%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 214 36% 9%;
+    --foreground: 210 28% 93%;
+    --card: 213 32% 13%;
+    --card-foreground: 210 28% 93%;
+    --popover: 213 32% 13%;
+    --popover-foreground: 210 28% 93%;
+    --primary: 212 88% 70%;
+    --primary-foreground: 214 40% 12%;
+    --secondary: 212 26% 22%;
+    --secondary-foreground: 210 28% 90%;
+    --muted: 212 24% 20%;
+    --muted-foreground: 212 16% 70%;
+    --accent: 176 55% 55%;
+    --accent-foreground: 214 40% 12%;
+    --destructive: 0 70% 62%;
+    --destructive-foreground: 214 40% 12%;
+    --border: 212 22% 28%;
+    --input: 212 22% 30%;
+    --ring: 212 88% 70%;
+    --brand: 212 88% 70%;
+    --brand-foreground: 214 40% 12%;
+    --success: 158 55% 52%;
+    --success-foreground: 214 40% 12%;
+    --warning: 38 85% 62%;
+    --warning-foreground: 214 40% 12%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* 表格单元格内的次要文字 */
+  .cell-muted {
+    @apply text-xs text-muted-foreground;
+  }
+}

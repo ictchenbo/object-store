@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>对象存储与文档管理一体化方案 v7 · PostgreSQL + MinIO + FastAPI</title>
+  <style>
+    :root{--bg:#f4f7fb;--surface:#fff;--soft:#edf3fa;--ink:#1c2b3c;--muted:#56677b;--line:#d9e3ed;--brand:#1765c1;--accent:#0c8a83;--warn:#a66a00;--risk:#b24c4c;--shadow:0 12px 34px rgba(20,45,80,.07)}
+    [data-theme="dark"]{--bg:#0e1520;--surface:#162335;--soft:#203145;--ink:#e9f1f9;--muted:#b1bfd0;--line:#34475d;--brand:#86baff;--accent:#69d2c8;--warn:#e9bb66;--risk:#ef9696;--shadow:0 12px 34px rgba(0,0,0,.2)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.72 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}a:focus-visible,button:focus-visible{outline:3px solid var(--brand);outline-offset:3px}.layout{display:grid;grid-template-columns:246px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;border-right:1px solid var(--line);background:var(--surface);padding:24px 18px}.brand{font-weight:800;line-height:1.4;color:var(--brand);margin-bottom:18px}.sidebar a{display:block;color:var(--muted);font-size:13px;padding:7px 10px;border-radius:8px}.sidebar a:hover,.sidebar a.active{background:var(--soft);color:var(--ink);text-decoration:none}.sidebar small{display:block;color:var(--muted);font-size:11px;margin:22px 9px}main{width:min(1190px,100%);padding:38px clamp(20px,4vw,58px) 86px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.eyebrow{color:var(--brand);font-size:12px;letter-spacing:.12em;font-weight:800;text-transform:uppercase}.theme{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:9px;padding:7px 12px;cursor:pointer}h1{font-size:clamp(30px,4vw,47px);line-height:1.15;letter-spacing:-.03em;margin:21px 0 18px}h2{font-size:25px;letter-spacing:-.02em;margin:0 0 17px}h3{font-size:17px;margin:21px 0 9px}p{margin:.5em 0 1em}.lead{font-size:17px;color:var(--muted);max-width:850px}.pills{display:flex;flex-wrap:wrap;gap:8px;margin:23px 0}.pill{border:1px solid var(--line);border-radius:100px;background:var(--surface);padding:5px 10px;color:var(--muted);font-size:12px}.section{margin-top:55px;scroll-margin-top:22px}.hero{background:linear-gradient(135deg,#164b9a,#1875ae 70%,#128b83);color:#fff;border-radius:19px;padding:24px 28px;box-shadow:var(--shadow);margin:28px 0}.hero strong{font-size:18px}.hero p{color:#eaf5ff;margin:7px 0 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.card,.box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:17px;box-shadow:var(--shadow)}.card h3{margin:0 0 5px}.card p:last-child{margin-bottom:0}.tag{display:inline-block;background:var(--soft);color:var(--brand);border-radius:5px;padding:1px 5px;font-size:11px;line-height:1.5;font-weight:800;white-space:nowrap}.tag.goal{color:var(--accent)}.tag.warn{color:var(--warn)}.tag.risk{color:var(--risk)}.muted{font-size:13px;color:var(--muted)}.callout{border-left:4px solid var(--brand);background:var(--soft);padding:13px 17px;border-radius:0 10px 10px 0;margin:16px 0}.callout.warn{border-color:var(--warn)}.callout.risk{border-color:var(--risk)}.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:13px}table{border-collapse:collapse;width:100%;min-width:720px}th,td{text-align:left;vertical-align:top;border-bottom:1px solid var(--line);padding:10px 13px}th{background:var(--soft);font-size:13px}tr:last-child td{border-bottom:0}ul,ol{padding-left:22px}li{margin:6px 0}.arch{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:center;margin:18px 0}.node{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:16px;text-align:center;min-height:92px;display:flex;flex-direction:column;justify-content:center}.node b{font-size:16px}.node span{font-size:12px;color:var(--muted)}.arrow{font-size:22px;color:var(--brand);font-weight:800}.subarch{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.rel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}.rel .node{position:relative;min-height:110px}.rel .node:not(:last-child):after{content:"→";position:absolute;right:-17px;top:35%;font-size:19px;color:var(--brand);z-index:2}.steps{counter-reset:step;display:grid;gap:9px;padding:0}.steps li{list-style:none;position:relative;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px 14px 12px 50px;margin:0}.steps li:before{counter-increment:step;content:counter(step);position:absolute;left:14px;top:13px;background:var(--brand);color:#fff;border-radius:50%;height:23px;width:23px;display:grid;place-items:center;font-size:12px;font-weight:800}.kpis{display:flex;flex-wrap:wrap;gap:8px}.kpis span{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-size:12px}footer{border-top:1px solid var(--line);margin-top:55px;padding-top:17px;color:var(--muted);font-size:12px}@media(max-width:950px){.layout{display:block}.sidebar{height:auto;position:static;border-right:0;border-bottom:1px solid var(--line);padding:12px 20px}.sidebar nav,.sidebar small{display:none}.brand{margin:0}.grid,.two,.subarch,.rel{grid-template-columns:1fr}.rel .node:after{display:none}.arch{grid-template-columns:1fr}.arrow{text-align:center;transform:rotate(90deg)}main{padding-top:24px}}@media print{.layout{display:block}.sidebar,.theme{display:none}main{width:100%;padding:0}.section{break-inside:avoid;margin-top:30px}.card,.box,.hero{box-shadow:none}a{color:inherit;text-decoration:underline}}
+  </style>
+</head>
+<body>
+<div class="layout"><aside class="sidebar" aria-label="目录"><div class="brand">OBJECT + DOCUMENT STORE<br>方案设计 v7</div><nav id="toc">
+  <a href="#summary">执行摘要</a><a href="#requirements">01 场景与范围</a><a href="#architecture">02 系统架构</a><a href="#model">03 领域与数据模型</a><a href="#types">文档类型规则</a><a href="#tags">自定义标签与检索</a><a href="#ingestion">04 持续入库与版本发布</a><a href="#read">05 读取与附件访问</a><a href="#api">06 API 契约</a><a href="#indexes">07 索引与容量</a><a href="#consistency">08 一致性与回收</a><a href="#statistics">09 统计与观测</a><a href="#deployment">10 部署与恢复</a><a href="#acceptance">11 验收计划</a><a href="#decisions">12 待决策项</a><a href="#sources">资料依据</a>
+</nav><small>标签：[设计] 拟实施；[依据] 可核对资料；[目标] 待验收；[估算] 非实测；[待确认] 业务输入。</small></aside>
+<main>
+  <div class="top"><div class="eyebrow">Solution Blueprint / 2026-10-09</div><button class="theme" id="themeButton" type="button" aria-label="切换深色模式">切换主题</button></div>
+  <h1>对象存储与文档版本管理<br>PostgreSQL + MinIO + FastAPI</h1>
+  <p class="lead"><span class="tag">设计</span> 保留 v2 的通用对象上传、查找、下载、删除和桶级统计；在同一对象目录之上提供数千万篇文档、版本、正文与图片附件的关系管理。PostgreSQL 管理目录和引用，MinIO 保存字节。</p>
+  <div class="pills"><span class="pill">版本 v7</span><span class="pill">对象层：objects</span><span class="pill">文档层：documents / versions / assets</span><span class="pill">自定义标签与检索</span><span class="pill">一致性契约</span><span class="pill">HTML 单文件方案</span></div>
+
+  <section id="summary" class="section"><div class="hero"><strong>核心选择：一套正式对象目录，两类入口</strong><p><span class="tag">设计</span> `objects` 是所有正式 MinIO 对象的唯一目录，临时上传由 upload_sessions 管理。对象目录独立支持 v2 的通用操作；文档版本只引用已就绪 objects。正文和附件全部就绪后，在 PostgreSQL 事务中发布版本并切换当前版本。被引用对象不能通过通用删除接口直接删除。</p></div>
+    <div class="grid"><div class="card"><h3>对象层 · 延续 v2</h3><p><span class="tag">设计</span> 上传会话、对象列表、按条件查找、签名下载、异步删除和桶级统计继续可用。</p></div><div class="card"><h3>文档层 · 延续 v3</h3><p><span class="tag">设计</span> 稳定文档 ID、追加式版本、正文对象引用、图片附件关系和当前版本指针。</p></div><div class="card"><h3>单一权威</h3><p><span class="tag">设计</span> PG 的 objects 记录 MinIO 位置与状态；文档层只引用 object_id，不另建第二套物理对象目录。</p></div></div>
+  </section>
+
+  <section id="requirements" class="section"><h2>01 · 场景与范围</h2><div class="two"><div class="box"><h3>对象层：保留 v2</h3><ul><li><span class="tag">设计</span> 支持独立文件的上传会话、对象详情、按桶/名称/时间/大小/类型及自定义标签筛选。</li><li><span class="tag">设计</span> 支持短时下载 URL、异步删除、失败重试、过期上传清理和对象对账。</li><li><span class="tag">设计</span> 保留桶级当前对象数/逻辑字节与每日新增、删除统计。</li></ul></div><div class="box"><h3>文档层：保留 v3</h3><ul><li><span class="tag">依据</span> 用户场景：数千万篇文档与图片、持续入库、按 ID 读取、版本及附件关系。</li><li><span class="tag">设计</span> 每篇文档有稳定 ID，版本追加，正文和附件指向对象层记录。</li><li><span class="tag">设计</span> 历史版默认保留；OCR、正文全文检索和跨地域双活不在第一版。</li></ul></div></div><div class="callout"><span class="tag">口径</span> 对象数、文档数、版本数和附件关系数分别统计。MinIO 物理容量还受冗余、历史对象版本等影响，不能由 PG 逻辑字节直接推得。</div></section>
+
+  <section id="architecture" class="section"><h2>02 · 系统架构</h2><div class="arch" role="img" aria-label="客户端和采集器通过 FastAPI 访问对象层与文档层；PostgreSQL 保存目录和引用，MinIO 保存字节"><div class="node"><b>客户端 / 采集器</b><span>独立文件管理、文档持续入库与按 ID 读取</span></div><div class="arrow">→</div><div class="node"><b>FastAPI 服务</b><span>对象 API + 文档 API + 统一鉴权</span></div><div class="arrow">↔</div><div class="node"><b>PostgreSQL</b><span>objects / documents / versions / assets / jobs / stats</span></div></div><div class="subarch"><div class="node"><b>MinIO 集群</b><span>所有对象的不可变字节；客户端经短时凭证直传</span></div><div class="node"><b>后台 Worker</b><span>删除、清理、重试、对账、对象及文档统计</span></div><div class="node"><b>监控与备份</b><span>API / DB / MinIO / Worker 指标与恢复演练</span></div></div><p class="muted"><span class="tag">设计</span> 对象层是存储基础服务；文档层通过 object_id 引用对象，不直接操作 MinIO key。API 与 Worker 无状态扩容，PG 按单主写入设计。</p></section>
+
+  <section id="model" class="section"><h2>03 · 领域与数据模型</h2><div class="rel" role="img" aria-label="documents 指向 document_versions；版本正文和 document_assets 引用同一个 objects 对象目录"><div class="node"><b>documents</b><span>稳定逻辑身份、当前版本指针</span></div><div class="node"><b>document_versions</b><span>追加式历史、正文对象引用</span></div><div class="node"><b>document_assets</b><span>版本与附件对象的关系</span></div><div class="node"><b>objects</b><span>v2 对象目录；MinIO key 与状态</span></div></div>
+    <div class="tablewrap"><table><thead><tr><th>表</th><th>关键字段</th><th>职责与约束</th></tr></thead><tbody>
+      <tr><td><b>document_types</b></td><td>code, display_name, status, schema_version, created_at</td><td><span class="tag">设计</span> 受控类型字典；稳定英文 code 作主键，例如 article / paper / report / image_record。FastAPI 按 code 和 schema_version 选择已部署的校验规则。停用类型禁止新建，但历史文档可读；删除被引用的类型受外键限制。</td></tr>
+      <tr><td><b>documents</b></td><td>id, tenant_id, source, external_id, doc_type, title, attrs_jsonb, current_version_id, created_at, updated_at</td><td><span class="tag">设计</span> 一篇逻辑文档一行；doc_type 非空并外键引用 document_types.code。`(tenant_id, source, external_id)` 唯一；`current_version_id` 可空，且必须属于本 document。频繁查询字段用普通列。</td></tr>
+      <tr><td><b>document_versions</b></td><td>id, tenant_id, document_id, version_no, source_revision, ingest_key, raw_object_id, body_object_id, parser_version, doc_type_snapshot, type_schema_version, attrs_jsonb, status, captured_at, published_at</td><td><span class="tag">设计</span> 追加式版本；doc_type_snapshot 外键引用类型字典，与 attrs_jsonb、type_schema_version 一起保存发布时的类型、属性与规则版本。`(document_id, version_no)` 与 `(document_id, ingest_key)` 唯一；文档及正文/原文对象使用包含 tenant_id 的复合外键。状态 staging / ready / failed。</td></tr>
+      <tr><td><b>document_type_changes</b></td><td>id, tenant_id, document_id, old_type, new_type, actor_id, reason, changed_at, new_version_id</td><td><span class="tag">设计</span> 仅重分类写入的审计记录；与新版本、documents 类型和当前版本指针在同一 PG 事务提交。</td></tr>
+      <tr><td><b>tags</b></td><td>id, tenant_id, name, normalized_name, status, created_at</td><td><span class="tag">设计</span> 对象与文档共用的租户内标签字典；UNIQUE(tenant_id, normalized_name)。创建后即能在该租户后续录入时选用；解绑不删除字典项。</td></tr>
+      <tr><td><b>object_tags</b></td><td>tenant_id, object_id, tag_id, created_at</td><td><span class="tag">设计</span> 对象与标签的多对多关系；复合外键保证对象和标签属于同一租户，UNIQUE(tenant_id, object_id, tag_id) 防止重复绑定。</td></tr>
+      <tr><td><b>document_tags</b></td><td>tenant_id, document_id, tag_id, created_at</td><td><span class="tag">设计</span> 逻辑文档与标签的多对多关系；复合外键保证同租户。标签默认跟随逻辑文档，而不是每个版本。</td></tr>
+      <tr><td><b>document_assets</b></td><td>tenant_id, version_id, object_id, role, ordinal, reference_name, attrs_jsonb</td><td><span class="tag">设计</span> 版本与图片/附件对象的关系；`(version_id, role, ordinal)` 唯一。版本和对象均通过包含 tenant_id 的复合外键约束。</td></tr>
+      <tr><td><b>objects</b></td><td>id, tenant_id, purpose, bucket, object_key, display_name, size_bytes, content_type, sha256, metadata_json, status, ready_at, deleted_at</td><td><span class="tag">设计</span> v2 对象目录；purpose 区分 standalone 与 document_internal。`(bucket, object_key)` 唯一；状态 pending / ready / deleting / deleted / failed。正文与图片字节不入 PG。</td></tr>
+      <tr><td><b>upload_sessions</b></td><td>id, object_id, tenant_id, staging_bucket, staging_key, idempotency_key, expected_size, expires_at, completed_at</td><td><span class="tag">设计</span> 客户端只能直传 staging 位置；objects.bucket/object_key 指向仅服务端可写的正式位置。文档采集也复用此流程。</td></tr>
+      <tr><td><b>jobs / ingest_jobs</b></td><td>id, kind, target_id, status, attempts, next_run_at, last_error</td><td><span class="tag">设计</span> 对象删除/对账与文档采集任务分表，避免高频任务状态堆在长期稳定目录行上。</td></tr>
+      <tr><td><b>stats_current / stats_daily</b></td><td>tenant_id, bucket, object_count, size_bytes；day, created_count, deleted_count</td><td><span class="tag">设计</span> 延续 v2 的桶级当前存量与每日流量。文档数、版本数另设业务汇总口径。</td></tr>
+      <tr><td><b>outbox_events</b></td><td>id, aggregate_id, event_kind, payload, created_at, processed_at</td><td><span class="tag">设计</span> 与对象及文档状态转移同事务写入；Worker 幂等消费统计和清理事件。</td></tr>
+    </tbody></table></div>
+    <div class="callout warn"><span class="tag warn">数据库约束</span> `documents.current_version_id` 通过 `(document_id, version_id)` 复合外键保证指向自己的版本；版本与附件关系通过 `(tenant_id, object_id)` 复合外键保证同租户。外键负责“存在且同租户”；“对象必须 ready”是状态规则，需在事务中锁对象行验证，外键本身不能表达。</div>
+    <p class="muted"><span class="tag">设计</span> 为复合外键在 documents、document_versions 和 objects 上建立对应的复合 UNIQUE 键；外键删除动作采用 RESTRICT，不能级联删除被引用的对象。DOI、栏目、图像尺寸等差异化属性按查询频率选择普通列或 JSONB；关系表不复制 MinIO key。<a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener">PostgreSQL 外键文档</a></p>
+  </section>
+
+  <section id="types" class="section"><h2>文档类型规则</h2><div class="callout"><span class="tag">结论</span> `documents.doc_type` 表示逻辑文档的业务类型；`objects.content_type` 表示文件字节的 MIME 类型。两者独立：一篇 paper 可关联 PDF、图片和 JSON 对象；一个 image_record 也可有元数据版本和衍生附件。</div>
+    <div class="tablewrap"><table><thead><tr><th>层次</th><th>字段与示例</th><th>规则</th></tr></thead><tbody>
+      <tr><td>统一分类</td><td>documents.doc_type = article / paper / report / image_record</td><td><span class="tag">设计</span> 必填、受 document_types 外键约束；API 返回 code 与展示名。类型 code 不复用、不因展示名改变而变更。</td></tr>
+      <tr><td>通用元数据</td><td>source、external_id、title、created_at 等</td><td><span class="tag">设计</span> 跨类型都要查询的字段保留为普通列；`documents.attrs_jsonb` 只放随逻辑文档稳定的补充属性。</td></tr>
+      <tr><td>类型专有属性</td><td>paper: doi / journal；article: channel；image_record: width / height</td><td><span class="tag">设计</span> 随内容版本变化的属性放 `document_versions.attrs_jsonb` 并保留快照与规则版本。FastAPI 按 doc_type 选择已部署的校验模型；高频筛选字段在明确查询需求后提升为列或表达式索引。</td></tr>
+      <tr><td>附件角色</td><td>raw / body / cover / inline_image / attachment</td><td><span class="tag">设计</span> 原文与正文由版本对象字段引用，其他角色由 document_assets.role 标识；发布时按类型检查必需对象与允许角色。</td></tr>
+    </tbody></table></div>
+    <p><span class="tag">设计</span> 创建文档时确定 doc_type；普通版本发布不得悄悄更改它。若来源分类纠错，走受权的重分类操作：用新类型校验属性和附件，追加一个引用原有对象的新版本，在同一事务内更新 documents.doc_type 与 current_version_id，并记录旧值、新值、操作者和时间。旧版本保留原 doc_type_snapshot，不回写历史。来源身份唯一键仍为 `(tenant_id, source, external_id)`，避免同一来源记录因类型变化被拆成两篇文档。</p>
+    <p class="muted"><span class="tag">待确认</span> 以上类型 code 仅为示例；正式类型清单、每类必填属性、允许的附件角色和“图片是否作为独立文档”应根据真实数据源确定。<a href="https://www.postgresql.org/docs/current/datatype-json.html" target="_blank" rel="noopener">PostgreSQL JSONB 文档</a>支持存储和按需索引差异化属性。</p>
+  </section>
+
+  <section id="tags" class="section"><h2>自定义标签与检索</h2><div class="callout"><span class="tag">设计</span> 同一租户内，对象与文档共用可复选的标签字典，但各自拥有独立的标签关系。录入时可选已有标签，也可提交新名称；服务端在绑定事务中自动创建不存在的标签。</div>
+    <div class="tablewrap"><table><thead><tr><th>环节</th><th>行为与边界</th></tr></thead><tbody>
+      <tr><td>选择与新建</td><td><span class="tag">设计</span> 输入框查询当前租户标签建议；提交既可包含已有 tag_id，也可包含新 tag_name。服务端统一做去首尾空白、Unicode NFC 与大小写归一，再按 `(tenant_id, normalized_name)` 查找或创建。空白及超长名称按配置拒绝。</td></tr>
+      <tr><td>并发同名</td><td><span class="tag">设计</span> 标签字典以数据库 UNIQUE 约束为最终防线；并发创建用 `INSERT ... ON CONFLICT DO NOTHING`，随后在同一事务的新语句中读取已有 ID，再插入关系。重复提交同一绑定保持幂等。</td></tr>
+      <tr><td>绑定范围</td><td><span class="tag">设计</span> 对象标签落在 object_tags；文档标签落在 document_tags。文档标签随逻辑文档存在，新增版本仍可看到；附件对象不自动继承文档标签。需要按附件对象查找时，应明确给该对象绑定标签。</td></tr>
+      <tr><td>标签检索</td><td><span class="tag">设计</span> `/objects` 只查直接绑定的对象标签，`/documents` 只查文档标签。`tag=名称` 支持单标签精确查找；多标签用 tag_ids 与 `all`（同时具备）或 `any`（具备其一），结合租户、状态和游标分页。搜索未知标签返回空列表，不自动建标签。</td></tr>
+      <tr><td>权限与保留</td><td><span class="tag">设计</span> 只能选择本租户的标签；标签变更沿用目标对象/文档的编辑权限。document_internal 对象仍受文档权限约束。解绑后标签字典保留供以后选择；停用标签不再建议新绑定，既有绑定仍可查询。</td></tr>
+      <tr><td>一致性与删除</td><td><span class="tag">设计</span> 新标签创建与对象/文档绑定在一个 PG 事务中提交；关系表的复合外键防止跨租户和悬空绑定。对象转为 deleted 后清理其标签关系；文档最终清理时同理，标签字典仍保留。</td></tr>
+    </tbody></table></div>
+    <p><span class="tag">设计</span> 为避免标签搜索扩散成全文搜索，首版按规范化名称精确匹配筛选，建议列表可做前缀查询。标签与对象、文档的关联属于 PostgreSQL 元数据，不写入 MinIO 对象 metadata；给文档贴标签也不增加对象计数。容量评估需按“实体数 × 平均标签数”估算两张关系表，装载代表性标签分布后测多标签查询。</p>
+    <p class="muted"><span class="tag">依据</span> PostgreSQL 的 <a href="https://www.postgresql.org/docs/current/sql-insert.html" target="_blank" rel="noopener">ON CONFLICT</a>、<a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener">唯一约束与外键</a>可支撑并发创建及关系约束；组合索引的适用性需根据<a href="https://www.postgresql.org/docs/current/indexes-multicolumn.html" target="_blank" rel="noopener">实际查询条件</a>验证。</p>
+  </section>
+  <section id="ingestion" class="section"><h2>04 · 对象入库与版本发布</h2><div class="two"><div class="card"><h3>独立对象：v2 能力，强化写入保护</h3><p><span class="tag">设计</span> `/uploads` 建 pending 对象并签发仅可写 staging key 的短时凭证；客户端直传；`complete` 核验 staging 后由服务端复制到唯一正式 key，再核验正式对象，最后置 ready。过期清理、幂等重试和对象统计继续生效。</p></div><div class="card"><h3>文档入库：复用对象层</h3><p><span class="tag">设计</span> 文档会话为原文、正文和附件分别创建对象层上传会话；采集器完成全部对象后发布文档版本。客户端不持有正式对象前缀的写权限。</p></div></div><h3>文档版本发布</h3><ol class="steps"><li><span class="tag">设计</span> 采集器提交 source、external_id、doc_type、ingest_key；API 校验类型 code，定位或创建 documents，在文档行锁下分配 version_no 并创建 staging 版本。已有文档的 doc_type 不匹配时返回 409，交由重分类流程处理；重复 ingest_key 返回原会话。</li><li><span class="tag">设计</span> 原文、正文与附件均走对象层 staging → 正式 key 的完成流程。正式 key 不复用且仅服务端可写；对象层核验正式对象存在与大小。若要求强 SHA-256 校验，需受控流式校验或可信采集器证明，不将 multipart ETag 视作 SHA-256。</li><li><span class="tag">设计</span> 采集器完成文档会话；FastAPI 按 doc_type 校验版本属性和必需对象，再在 PG 事务中锁定文档和所引用的 objects 行，确认同租户且全部 ready，写入版本属性快照、正文及附件关系，将版本置 ready，并按发布策略更新 current_version_id。</li><li><span class="tag">设计</span> 同一事务写入文档统计事件；对象层对象在上传完成时已各自计入对象统计。文档发布不得再次累加对象数或对象字节。</li><li><span class="tag">设计</span> 已完成的最高 version_no 默认成为当前版本；晚到旧修订保留为历史。若来源 revision 可靠，可按其排序。</li></ol>
+    <p class="muted"><span class="tag">依据</span> MinIO Python SDK 提供服务端 <a href="https://docs.min.io/aistor/developers/sdk/python/api/" target="_blank" rel="noopener">copy_object 与 stat_object</a>。SDK 文档列出单次 copy_object 的源对象大小上限 5 GiB；v2 暂定单文件上限 1 GiB，超限文件需单独设计 multipart/compose 流程。正式复制会增加存储端 I/O 与短时空间占用，需压测。</p>
+    <div class="callout risk"><span class="tag risk">一致性边界</span> MinIO 与 PG 不共享事务。已上传但文档未发布的 ready 对象可作为暂存对象保留至文档会话 TTL；只有确认无任何版本引用且过保留期后才进入通用删除任务。</div>
+  </section>
+
+  <section id="read" class="section"><h2>05 · 对象与文档读取</h2><div class="two"><div class="card"><h3>对象入口：延续 v2</h3><p><span class="tag">设计</span> `/objects` 保留桶、名称前缀、类型、时间、大小筛选，并增加按自定义标签筛选；按对象 ID 查详情，签发短时下载 URL。列表使用游标分页。</p></div><div class="card"><h3>文档入口：延续 v3</h3><p><span class="tag">设计</span> 按 document ID 查当前版本，按版本号查历史；`/documents` 支持按自定义标签查找。响应以 object_id 描述正文与附件；附件关系固定在版本上，历史版清单不随当前版变化。</p></div></div><p><span class="tag">设计</span> 普通对象用户可管理其租户内的 standalone 对象；document_internal 对象仅通过授权文档访问。对象管理员可查看完整物理目录。文档列表不批量展开所有附件，详情按需读取。</p></section>
+
+  <section id="api" class="section"><h2>06 · FastAPI API 契约</h2><p><span class="tag">设计</span> 路径前缀 `/api/v1`。保留 v2 的 `/uploads`、`/objects`、`/stats` 路径；文档能力新增 `/ingest-sessions`、`/documents`、`/document-stats`，标签能力新增 `/tags` 和标签绑定接口。写操作要求 Idempotency-Key，错误体统一为 code、message、request_id。</p><div class="tablewrap"><table><thead><tr><th>方法 / 路径</th><th>核心用途</th><th>主要状态</th></tr></thead><tbody>
+    <tr><td>POST /uploads；POST /uploads/{id}/complete</td><td>v2 对象发起与完成；返回 object_id 和 ready 状态，文档采集也复用</td><td>201 / 200；409；422；503</td></tr>
+    <tr><td>GET /objects；GET /objects/{id}</td><td>v2 对象筛选、游标列表与对象详情；`tag=名称` 或 `tag_ids` + `tag_mode=all|any` 只匹配对象直接标签</td><td>200；400；403；404</td></tr>
+    <tr><td>GET /tags?q=</td><td>返回本租户已有标签的前缀建议，供录入时选择；不创建标签</td><td>200；400</td></tr>
+    <tr><td>POST /objects/{id}/tags；DELETE /objects/{id}/tags/{tag_id}</td><td>提交已有 tag_ids 与 new_tag_names，自动创建缺失标签并绑定；解除对象标签</td><td>200；204；403；404；422</td></tr>
+    <tr><td>POST /objects/{id}/download-url</td><td>v2 短时下载 URL；独立对象按对象权限，文档对象按引用文档权限</td><td>200；403；404；409</td></tr>
+    <tr><td>DELETE /objects/{id}</td><td>v2 异步删除；被任何版本引用或处于文档暂存保护期则拒绝</td><td>202；204 已删除；409 被引用；404</td></tr>
+    <tr><td>GET /stats/overview；GET /stats/buckets</td><td>v2 当前对象数、逻辑字节和桶级日统计，返回 as_of</td><td>200</td></tr>
+    <tr><td>GET /document-types</td><td>列出当前可用于新建的类型 code、展示名与属性规则版本</td><td>200</td></tr>
+    <tr><td>POST /ingest-sessions</td><td>按 source + external_id + doc_type + ingest_key 建暂存版本，返回所需对象上传会话；未知或停用类型拒绝新建</td><td>201 / 200 幂等；409 类型冲突；422 类型无效</td></tr>
+    <tr><td>POST /ingest-sessions/{id}/complete</td><td>按类型校验属性与必需对象，确认引用对象均 ready，并发布版本</td><td>200；409；422；503</td></tr>
+    <tr><td>GET /documents/{id}</td><td>按稳定 ID 读文档及当前版本摘要</td><td>200；404 不存在或无权限</td></tr>
+    <tr><td>POST /documents/{id}/reclassify</td><td>受权纠正类型；新版本保存类型与属性快照，记录审计事件</td><td>200；403；409；422</td></tr>
+    <tr><td>GET /documents</td><td>使用 doc_type、来源、时间及 `tag=名称` 或 `tag_ids` + `tag_mode=all|any` 筛选；游标分页</td><td>200；400 无效筛选；403 无权限</td></tr>
+    <tr><td>POST /documents/{id}/tags；DELETE /documents/{id}/tags/{tag_id}</td><td>提交已有 tag_ids 与 new_tag_names，自动创建缺失标签并绑定；解除文档标签</td><td>200；204；403；404；422</td></tr>
+    <tr><td>GET /documents/{id}/versions</td><td>历史版本列表</td><td>200；404</td></tr>
+    <tr><td>GET /documents/{id}/versions/{no}</td><td>某版本与其正文、图片、附件清单</td><td>200；404</td></tr>
+    <tr><td>GET /document-stats/overview</td><td>文档、版本、附件关系统计；携带 as_of，与对象统计分口径</td><td>200</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">设计</span> 标签绑定请求示例：`{"tag_ids":["现有标签ID"],"new_tag_names":["项目A"]}`；响应返回去重后的标签 ID 与展示名。若新名称归一化后已有同名标签，则复用它。对象详情和文档详情均返回各自直接绑定的标签。租户对象用户可列表、下载和删除自己的 standalone 对象；document_internal 对象通过文档权限访问且不可直接删除。跨租户全局目录与运维操作只开放对象管理员。</p></section>
+
+  <section id="indexes" class="section"><h2>07 · 索引与容量</h2><div class="tablewrap"><table><thead><tr><th>表 / 查询</th><th>首批索引</th><th>选择理由</th></tr></thead><tbody>
+    <tr><td>objects 物理定位</td><td>PRIMARY KEY(id)；UNIQUE(bucket, object_key)</td><td><span class="tag">设计</span> v2 独立对象和 v4 文档对象共用唯一目录，避免同一物理对象重复登记。</td></tr>
+    <tr><td>objects 列表</td><td>(tenant_id, status, ready_at DESC, id DESC)；桶内列表按实测加 bucket 前导列</td><td><span class="tag">设计</span> 延续 v2 的查找与游标分页；不预建所有筛选组合。</td></tr>
+    <tr><td>documents 按 ID</td><td>PRIMARY KEY(id)；必要时 `(tenant_id, id)`</td><td><span class="tag">设计</span> 按 ID 定位是主路径；权限过滤必须包含租户或访问范围。</td></tr>
+    <tr><td>来源幂等</td><td>UNIQUE(tenant_id, source, external_id)</td><td><span class="tag">设计</span> 同一来源对象只对应一个逻辑文档。</td></tr>
+    <tr><td>版本读取</td><td>UNIQUE(document_id, version_no)；UNIQUE(document_id, ingest_key)</td><td><span class="tag">设计</span> 快速取历史版本，并约束重试。</td></tr>
+    <tr><td>附件列表</td><td>(version_id, role, ordinal)</td><td><span class="tag">设计</span> 先按版本定位，再按角色和顺序展示。</td></tr>
+    <tr><td>文档类型筛选</td><td>按实测选择 `(tenant_id, doc_type, created_at DESC, id DESC)`</td><td><span class="tag">设计</span> 仅在类型 + 时间列表是高频路径时建立；`doc_type` 单列索引是否有益需看选择性与查询计划。</td></tr>
+    <tr><td>差异化属性</td><td>按需添加 JSONB GIN 或表达式索引</td><td><span class="tag">设计</span> 避免把整个 JSONB 默认索引化导致入库成本上升。</td></tr>
+    <tr><td>标签选择与并发创建</td><td>tags: UNIQUE(tenant_id, normalized_name)</td><td><span class="tag">设计</span> 同租户规范化后同名仅保留一个标签；前缀建议的查询计划需单独实测。</td></tr>
+    <tr><td>对象标签查找</td><td>object_tags: UNIQUE(tenant_id, object_id, tag_id)；另建 (tenant_id, tag_id, object_id)</td><td><span class="tag">设计</span> 前者服务对象详情和去重，后者从标签定位对象；再过滤 objects.status、purpose 与权限范围。</td></tr>
+    <tr><td>文档标签查找</td><td>document_tags: UNIQUE(tenant_id, document_id, tag_id)；另建 (tenant_id, tag_id, document_id)</td><td><span class="tag">设计</span> 前者服务文档详情，后者从标签定位文档；多标签 all/any 与时间排序应在代表性数据上 EXPLAIN ANALYZE。</td></tr>
+  </tbody></table></div><p><span class="tag">判断</span> 数千万篇文档本身不足以要求分布式数据库。documents 主要按 ID 读，默认不按时间分区；对象层、版本表和附件关系的行数可能明显高于文档数，分别按真实查询与清理方式评估。<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">PostgreSQL 分区文档</a></p><div class="callout"><span class="tag warn">估算</span> 若 3,000 万篇文档的有效字段平均为 1 KB，仅 documents 字段载荷约 30 GB（十进制）；对象、版本、附件关系、索引、WAL、备份与预留空间均需另算。用代表性数据装载后实测。</div></section>
+
+  <section id="consistency" class="section"><h2>08 · objects 与 documents 的一致性契约</h2><div class="callout"><span class="tag">结论</span> PG 内的“文档—版本—对象”引用可用约束与事务保证；PG 与 MinIO 之间没有跨系统原子事务，只能通过暂存状态、幂等重试、持久任务和对账达到最终一致。对外只发布已经核验并提交的版本。</div>
+    <div class="tablewrap"><table><thead><tr><th>不变量</th><th>保证方式</th></tr></thead><tbody>
+      <tr><td>I1 · 引用存在且同租户</td><td><span class="tag">设计</span> 版本的 raw_object_id、body_object_id 与附件的 object_id 使用复合外键；documents.current_version_id 只可指向自己的版本。</td></tr>
+      <tr><td>I2 · 已发布版本只引用 ready 对象</td><td><span class="tag">设计</span> 发布事务先锁 objects 行，再检查同租户、status=ready 和所有必需附件齐全；随后写关系、置版本 ready、切换当前指针，一次提交。</td></tr>
+      <tr><td>I3 · 已引用对象不得进入 deleting</td><td><span class="tag">设计</span> 通用删除事务同样先锁 objects 行，检查原文/正文/附件引用及保护会话；有引用返回 409，无引用才改状态并写删除任务。</td></tr>
+      <tr><td>I4 · 当前版本始终可解析</td><td><span class="tag">设计</span> current_version_id 与版本状态在同一事务更新；staging/failed 版本不成为当前版本。版本删除前先处理当前指针。</td></tr>
+      <tr><td>I5 · 对象计数不重复</td><td><span class="tag">设计</span> 对象 ready/deleted 转移各产生一次唯一统计事件；文档发布只增加文档/版本统计，不再增加对象统计。</td></tr>
+    </tbody></table></div>
+    <h3>并发协议</h3><ol class="steps"><li><span class="tag">设计</span> 发布事务先锁目标 documents 行，再按 object_id 固定顺序锁所有待引用的 objects 行；复核状态后插入/确认引用并提交。</li><li><span class="tag">设计</span> 删除事务锁定 objects 行，再查询所有版本与附件引用以及未过期的文档入库会话；若任一存在则拒绝，否则置 deleting 并在同一事务写 jobs。</li><li><span class="tag">设计</span> 所有对象状态变更和引用建立只能通过上述服务路径；数据库账号按职责限权。若允许其他程序直接更新这些表，需把状态检查进一步下沉至受控数据库函数或触发器。</li></ol><p class="muted"><span class="tag">依据</span> PostgreSQL 支持<a href="https://www.postgresql.org/docs/current/ddl-constraints.html" target="_blank" rel="noopener">复合外键</a>与<a href="https://www.postgresql.org/docs/current/sql-select.html" target="_blank" rel="noopener">行级锁定读取</a>。固定锁顺序是本方案降低死锁风险的设计规则。</p>
+    <h3>故障处理</h3><div class="tablewrap"><table><thead><tr><th>情形</th><th>处理</th></tr></thead><tbody>
+    <tr><td>重复采集相同文档</td><td><span class="tag">设计</span> `(tenant_id, source, external_id)` 定位逻辑文档；同 ingest_key 返回同一版本，新的有效修订追加版本。</td></tr>
+    <tr><td>staging 已上传，正式复制失败</td><td><span class="tag">设计</span> objects 保持 pending；任务重试复制。上传会话到期后清理 staging，并核对正式位置是否有未登记对象。</td></tr>
+    <tr><td>正式复制成功，PG ready 提交失败</td><td><span class="tag">设计</span> 重试先检查正式 key 是否存在且与预期大小/可信校验值相符；相符则完成 PG 状态，不盲目覆盖；不符则隔离并报警。</td></tr>
+    <tr><td>对象已 ready，文档发布失败</td><td><span class="tag">设计</span> 版本保持 staging，ready 对象暂受文档会话保护；重试发布或在 TTL 后进行无引用清理。</td></tr>
+    <tr><td>附件上传不完整</td><td><span class="tag">设计</span> 整版不发布；详情仍读旧 current_version_id。允许重新上传缺失附件再完成。</td></tr>
+    <tr><td>两个任务并发发布</td><td><span class="tag">设计</span> 在文档行上串行更新当前版本指针，并比较版本顺序；唯一约束负责幂等。</td></tr>
+    <tr><td>通用对象删除与文档引用竞态</td><td><span class="tag">设计</span> 两条路径都锁定同一 objects 行；删除事务检查无版本/附件引用且无保护会话，才置 deleting 并写 jobs。引用事务只接受 ready 对象。</td></tr>
+    <tr><td>删除某历史版本</td><td><span class="tag">设计</span> 先解除正文和附件关系并确认不是当前版本；对象仅在无任何引用且保留期结束后进入通用删除流程。</td></tr>
+    <tr><td>PG 与 MinIO 不一致</td><td><span class="tag">设计</span> 定期比对 ready 对象的存在性与暂存对象；缺失对象报警，不静默删除文档关系。</td></tr>
+  </tbody></table></div><p><span class="tag">设计</span> 任务重试使用数据库持久化状态；统计与清理事件通过 outbox 事务写入。对账覆盖 staging、正式对象和 PG 目录，并按 key 范围分页、限速、记录游标。正式前缀写删权限仅授予本服务；若外部系统直接修改正式对象，PG 无法即时保证对象仍存在，必须引入事件同步和更频繁对账。</p></section>
+
+  <section id="statistics" class="section"><h2>09 · 双层统计与观测</h2><div class="two"><div class="card"><h3>对象层：延续 v2</h3><p><span class="tag">设计</span> stats_current 记录各桶当前 ready 对象数与逻辑字节；stats_daily 记录每日上传和删除。文档对象在对象完成时计一次，文档发布不再计入对象总数。</p></div><div class="card"><h3>文档层：新增</h3><p><span class="tag">设计</span> 另统计文档数、已发布版本数、正文引用数、附件关系数。文档层统计可关联对象逻辑字节，但不与桶级容量相加。</p></div></div><p><span class="tag">设计</span> 两类接口分别返回 as_of；监控对象上传完成率、文档发布失败率、保护期孤儿对象、Worker 积压、按 ID 查询 p95/p99、PG 索引与 WAL 增长及 MinIO 容量。</p><div class="callout warn"><span class="tag warn">口径</span> 同一对象可被多个文档版本引用：对象层只计一个物理目录记录，文档层可计多条引用关系。报表必须分别命名。</div></section>
+
+  <section id="deployment" class="section"><h2>10 · 部署与恢复</h2><div class="tablewrap"><table><thead><tr><th>组件</th><th>生产建议</th><th>恢复验证</th></tr></thead><tbody>
+    <tr><td>FastAPI / Worker</td><td><span class="tag">设计</span> 至少双实例、无状态；连接池和并发上限受 PG 容量约束。</td><td>重启和任务重试不创建重复版本。</td></tr>
+    <tr><td>PostgreSQL</td><td><span class="tag">设计</span> 单主与备库、PITR、独立备份；首先优化查询与索引，再考虑读副本。</td><td>在隔离环境恢复到时间点，校验文档/版本/关系完整。</td></tr>
+    <tr><td>MinIO</td><td><span class="tag">设计</span> 分布式部署；生命周期与复制策略按保留要求设定。</td><td>抽查由 PG objects 定位的独立对象、正文及附件均可读取。</td></tr>
+    <tr><td>脚本</td><td><span class="tag">设计</span> 实施阶段交付 compose.yaml、环境模板、Linux start.sh / stop.sh。</td><td>启动前验证依赖、迁移与凭据，停止时等待正在发布的事务完成。</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">设计</span> MinIO 与 PG 的备份时间点需要可对应；恢复后先运行只读对账，再决定是否开放新入库。实际 RPO/RTO 需业务确定。</p></section>
+
+  <section id="acceptance" class="section"><h2>11 · 验收计划</h2><div class="tablewrap"><table><thead><tr><th>场景</th><th>验收标准</th></tr></thead><tbody>
+    <tr><td>v2 对象能力回归</td><td><span class="tag goal">目标</span> 独立对象上传、筛选、下载、删除、桶级当前/日统计、失败重试与过期清理均可用，API 路径保持兼容。</td></tr>
+    <tr><td>上传凭证重放</td><td><span class="tag goal">目标</span> 客户端在凭证有效期内再次写 staging key，不改变已 ready 正式对象的内容或文档当前版本。</td></tr>
+    <tr><td>稳定 ID 与版本</td><td><span class="tag goal">目标</span> 同来源标识重复入库只保留一篇逻辑文档；有效新修订追加版本；旧版可读且附件清单不变。</td></tr>
+    <tr><td>文档类型</td><td><span class="tag goal">目标</span> 未知/停用类型不能新建；同一来源身份提交不同类型返回 409；按 doc_type 筛选正确；旧版本保留各自属性快照；重分类保留审计记录。</td></tr>
+    <tr><td>自定义标签</td><td><span class="tag goal">目标</span> 对象和文档均可选择已有标签或输入新名称；同租户并发创建同名标签只产生一个字典项；新标签随后可选；跨租户标签不可绑定。</td></tr>
+    <tr><td>按标签检索</td><td><span class="tag goal">目标</span> 对象/文档检索各自只返回直接绑定项；单标签及 all/any 多标签筛选、与类型/时间组合、游标翻页结果正确；不存在的标签返回空结果且不新建。</td></tr>
+    <tr><td>跨层删除保护</td><td><span class="tag goal">目标</span> 已引用对象的通用删除返回 409；发布引用与删除并发时恰有一个成功，永不产生 ready 版本引用 deleting/deleted 对象。</td></tr>
+    <tr><td>故障注入</td><td><span class="tag goal">目标</span> 对象上传、版本发布、当前指针更新前后中断均可重试或回收；对象和文档统计不重复。</td></tr>
+    <tr><td>规模装载</td><td><span class="tag goal">目标</span> 生成代表性的 3,000 万篇文档、对应对象以及实际比例的版本和附件关系；记录各表/索引/WAL/备份体积。</td></tr>
+    <tr><td>读性能</td><td><span class="tag goal">目标</span> 按 ID 获取当前版本 p95 ≤ 150 ms；版本列表 p95 ≤ 250 ms。目标值不含正文传输，需在指定硬件和并发下实测。</td></tr>
+    <tr><td>入库与恢复</td><td><span class="tag goal">目标</span> 按预计峰值持续入库 24 小时无丢失或重复版本；对象、文档两层统计正确；完成 PG 时间点恢复和 MinIO 对账演练。</td></tr>
+  </tbody></table></div><p class="muted"><span class="tag">待确认</span> 峰值文档/秒、平均版本数、附件数、正文大小与并发读取量尚未给出，压测数据分布必须据此修订。</p></section>
+
+  <section id="decisions" class="section"><h2>12 · 待决策项与选型边界</h2><div class="tablewrap"><table><thead><tr><th>问题</th><th>默认方案</th><th>改变方案的条件</th></tr></thead><tbody>
+    <tr><td>元数据主库</td><td><span class="tag">建议</span> PostgreSQL</td><td>团队已有成熟 MySQL 体系可继续用 MySQL；单机离线、主要只读可评估 SQLite；实测单主写入或跨地域要求超出能力时再评估分布式 SQL。</td></tr>
+    <tr><td>文档去重</td><td><span class="tag">设计</span> 按来源外部 ID 做逻辑去重；对象不自动按内容哈希去重。</td><td>内容重复率高且物理成本显著时再引入去重与引用计数。</td></tr>
+    <tr><td>版本定义</td><td><span class="tag">设计</span> 每次有效抓取/解析产出版本。</td><td>需明确“相同原文、不同解析器版本”是否产生新版本，以及来源 revision 的可信度。</td></tr>
+    <tr><td>文档类型清单</td><td><span class="tag">设计</span> 受控字典 + 稳定 code；类型在文档身份上，类型专有属性按版本快照保存。</td><td>需提供实际文档类别、每类必填属性、允许附件角色，以及图片是否作为独立逻辑文档。</td></tr>
+    <tr><td>标签使用规则</td><td><span class="tag">设计</span> 租户内共享标签字典；对象与逻辑文档独立绑定；默认无继承。</td><td>需按业务确定标签名称长度、每实体标签数上限、谁可新建/停用标签，以及是否需要按历史版本保留标签快照。</td></tr>
+    <tr><td>文件正文搜索</td><td><span class="tag">设计</span> 第一版不包含。</td><td>若必须按词、段落或图像内容检索，另设抽取与搜索索引，不把文件内容塞进 PG 元数据表。</td></tr>
+    <tr><td>版本与删除策略</td><td><span class="tag">设计</span> 历史版默认保留；已引用对象的通用删除返回 409，无引用且超过保留期才回收。</td><td>需确定保留期、删除权、法律冻结及成本预算。</td></tr>
+  </tbody></table></div></section>
+
+  <section id="sources" class="section"><h2>资料依据</h2><ul><li><span class="tag">依据</span> 用户要求保留 v2 通用对象管理能力，并补充数千万文档、持续入库、按 ID 读取、版本及附件关系；对象和文档均需支持自定义标签、录入时自动创建及按标签查找。</li><li><span class="tag">依据</span> <a href="https://www.postgresql.org/docs/current/indexes-types.html" target="_blank" rel="noopener">PostgreSQL 索引类型</a>、<a href="https://www.postgresql.org/docs/current/datatype-json.html" target="_blank" rel="noopener">JSONB</a>、<a href="https://www.postgresql.org/docs/current/ddl-partitioning.html" target="_blank" rel="noopener">表分区</a>、<a href="https://www.postgresql.org/docs/current/sql-insert.html" target="_blank" rel="noopener">ON CONFLICT</a>。</li><li><span class="tag">依据</span> <a href="https://docs.min.io/aistor/developers/sdk/python/api/" target="_blank" rel="noopener">MinIO Python SDK API</a>：对象上传、检查、签名下载。商业版与社区版的实际功能、授权及版本需在部署前单独核对。</li><li><span class="tag">依据</span> <a href="https://fastapi.tiangolo.com/tutorial/bigger-applications/" target="_blank" rel="noopener">FastAPI 模块化应用</a>与<a href="https://fastapi.tiangolo.com/advanced/security/oauth2-scopes/" target="_blank" rel="noopener">访问范围</a>。</li></ul><p class="muted"><span class="tag">说明</span> 本文为方案设计；表结构、接口、流程、性能目标尚未实现或压测。外部资料仅作为产品能力依据。</p></section>
+  <footer>对象存储与文档管理一体化方案 · v7 · UTF-8 HTML · 可独立打开</footer>
+</main></div>
+<script>
+  // 中文注释：主题偏好不可用时，保留系统默认主题。
+  try {
+    const saved = localStorage.getItem('document-object-design-theme');
+    if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+  } catch (error) { console.warn('读取主题偏好失败', error); }
+  const themeButton = document.getElementById('themeButton');
+  if (themeButton) themeButton.addEventListener('click', () => {
+    try {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      localStorage.setItem('document-object-design-theme', next);
+    } catch (error) { console.warn('保存主题偏好失败', error); }
+  });
+  // 中文注释：目录高亮只增强导航，不影响内容阅读。
+  try {
+    const links = [...document.querySelectorAll('#toc a')];
+    const observer = new IntersectionObserver(entries => {
+      const visible = entries.filter(item => item.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      links.forEach(link => link.classList.toggle('active', link.hash === '#' + visible.target.id));
+    }, {rootMargin:'-10% 0px -65% 0px', threshold:[0,.1,.5]});
+    document.querySelectorAll('main section[id]').forEach(section => observer.observe(section));
+  } catch (error) { console.warn('目录高亮不可用', error); }
+</script>
+</body>
+</html>
